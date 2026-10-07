@@ -1,0 +1,7 @@
+node_modules
+dist
+dist-crazygames
+releases
+.DS_Store
+*.log
+shots

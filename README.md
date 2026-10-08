@@ -1,4 +1,4 @@
-# Intestine Crawler
+# Guts & Gems
 
 A dungeon crawler where the dungeon is a gut. A tiny miner has been swallowed by a creature. Dig the gems out of its belly, zap the bugs
 before they reach the acid, and **escape out of the other end before you are digested**.

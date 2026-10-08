@@ -32,7 +32,7 @@ page.on('pageerror', (e) => errors.push(e.message));
 page.on('request', (r) => { if (!r.url().startsWith(origin) && !r.url().startsWith('data:') && !r.url().startsWith('blob:')) external.push(r.url()); });
 const VIEW = process.env.VIEW ?? 'fp';
 const EXTRAS = (process.env.EXTRAS ?? '').split(',').filter(Boolean);
-await page.addInitScript(([v, ex]) => { try { if (!localStorage.getItem('ic_save_v1')) localStorage.setItem('ic_save_v1', JSON.stringify({ view: v, extras: ex, progress: 4 })); } catch (e) {} }, [VIEW, EXTRAS]);
+await page.addInitScript(([v, ex]) => { try { if (!localStorage.getItem('gg_save_v1')) localStorage.setItem('gg_save_v1', JSON.stringify({ view: v, extras: ex, progress: 4 })); } catch (e) {} }, [VIEW, EXTRAS]);
 const LEVEL = process.env.LEVEL;
 await page.goto(`${origin}/?seed=${seed}${LEVEL !== undefined ? '&level=' + LEVEL : ''}`);
 await page.waitForTimeout(800);
@@ -114,7 +114,7 @@ if (process.env.REWARD && (await page.evaluate(() => window.__gut.scene.g.phase)
   await page.screenshot({ path: `${shots}/reward.png` });
   await page.mouse.click(...px(102, 118)); // first card
   await page.waitForTimeout(2200);
-  const extras = await page.evaluate(() => JSON.parse(localStorage.getItem('ic_save_v1')).extras);
+  const extras = await page.evaluate(() => JSON.parse(localStorage.getItem('gg_save_v1')).extras);
   console.log('reward saved, extras =', JSON.stringify(extras));
   await page.screenshot({ path: `${shots}/nextrun.png` });
 }

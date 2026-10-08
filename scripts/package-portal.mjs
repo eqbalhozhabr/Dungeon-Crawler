@@ -42,7 +42,7 @@ if (problems.length) {
 }
 
 fs.mkdirSync('releases/crazygames', { recursive: true });
-const zip = path.resolve(`releases/crazygames/intestine-crawler-crazygames-v${version}-${commit}.zip`);
+const zip = path.resolve(`releases/crazygames/guts-and-gems-crazygames-v${version}-${commit}.zip`);
 if (fs.existsSync(zip)) fs.rmSync(zip);
 execSync(`zip -r -q "${zip}" .`, { cwd: out, stdio: 'inherit' });
 console.log(`\nZip: ${zip} (${(fs.statSync(zip).size / 1024).toFixed(0)} KB)`);

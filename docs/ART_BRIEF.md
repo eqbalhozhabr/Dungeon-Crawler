@@ -1,4 +1,4 @@
-# Intestine Crawler: hand-drawn art brief
+# Guts & Gems: hand-drawn art brief
 
 Everything in the game is currently drawn by code (placeholders). This list says what to draw by hand
 so the game can be upgraded later, one group at a time. Nothing here is needed to finish the gameplay.
@@ -67,7 +67,7 @@ moss `14120a 241f10 3a3118 584a20 7c6c2c a6924a d2be78`, rust `160808 2a0e0e 461
 
 | Item | key | Native size | Notes |
 |---|---|---|---|
-| Title wordmark "INTESTINE CRAWLER" | new | 400x70 | replaces the pixel text on the title screen |
+| Title wordmark "GUTS & GEMS" | new | 400x70 | replaces the pixel text on the title screen |
 | Map parchment with the gut winding from the mouth (bottom left) to the exit (top right) | `map_bg` | 480x270 | node positions are fixed in code: (62,178) (142,124) (226,168) (316,114) (400,70), exit (446,36); mouth at (22,206) |
 | Map node ring: normal / completed | `map_node`, `map_node_done` | 40x40 | |
 | Stars on / off | `star_on`, `star_off` | 11x11 | |

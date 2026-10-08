@@ -2,7 +2,7 @@
 export const W = 480;
 export const H = 270;
 
-export const GAME_TITLE = 'Intestine Crawler'; // no game with this exact name found in a quick search (Oct 2026); re-check before release
+export const GAME_TITLE = 'Guts & Gems'; // no game with this exact name found in a quick web search (Oct 2026); re-check on CrazyGames/itch/Steam before release
 
 export const CELL = 32;
 export const BOARD_X = 40;

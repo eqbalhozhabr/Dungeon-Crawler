@@ -1,11 +1,11 @@
-// Copies the production build into the Lucky Lion website repo as public/<slug>/ (default: intestine-crawler).
+// Copies the production build into the Lucky Lion website repo as public/<slug>/ (default: guts-and-gems).
 // Only that one folder is replaced; nothing else in the website is touched.
 // Usage: npx vite build && node scripts/deploy-to-website.mjs <path to luckylion-website> [slug]
 import fs from 'node:fs';
 import path from 'node:path';
 
 const site = path.resolve(process.argv[2] ?? '');
-const slug = process.argv[3] ?? 'intestine-crawler';
+const slug = process.argv[3] ?? 'guts-and-gems';
 if (!process.argv[2] || !fs.existsSync(path.join(site, 'astro.config.mjs')) || !fs.existsSync(path.join(site, 'public'))) {
   console.error('Pass the path of the luckylion-website repo (needs astro.config.mjs and public/).');
   process.exit(1);
@@ -32,8 +32,8 @@ fs.cpSync(dist, target, { recursive: true });
 const phaserLicence = fs.readFileSync(path.resolve('node_modules/phaser/LICENSE.md'), 'utf8').trim();
 fs.writeFileSync(
   path.join(target, 'THIRD_PARTY_NOTICES.txt'),
-  `Intestine Crawler - third-party notices
-=======================================
+  `Guts & Gems - third-party notices
+=================================
 
 This game contains the following third-party open-source software. Its licence text is
 reproduced below as the licence requires.

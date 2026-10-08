@@ -47,7 +47,7 @@ export class TitleScene extends Phaser.Scene {
 
     const title = new Label(this, W / 2, 34, GAME_TITLE, { scale: 4, align: 'center', color: C.accent });
     this.tweens.add({ targets: title, y: 38, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    new Label(this, W / 2, 76, 'A TINY MINER. A VERY HUNGRY FROG.', { scale: 1, align: 'center', color: C.text });
+    new Label(this, W / 2, 76, 'DIG THE GEMS. DO NOT GET DIGESTED.', { scale: 1, align: 'center', color: C.text });
 
     // cast
     const hero = this.add.image(150, 168, 'hero_idle').setScale(4);
@@ -72,7 +72,7 @@ export class TitleScene extends Phaser.Scene {
         this.scene.restart();
       }, { fill: 0x7a2a45 });
     }
-    new Label(this, W / 2, 249, 'PROTOTYPE V0.2', { align: 'center', color: C.textDim, shadow: false });
+    new Label(this, W / 2, 249, 'PROTOTYPE V0.4', { align: 'center', color: C.textDim, shadow: false });
 
     this.input.keyboard?.on('keydown-ENTER', () => this.start());
     this.input.keyboard?.on('keydown-SPACE', () => this.start());

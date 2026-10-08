@@ -5,9 +5,9 @@ import { SBootScene } from './scenes/SBoot';
 import { SEndScene } from './scenes/SEnd';
 import { SExploreScene } from './scenes/SExplore';
 import { SFightScene } from './scenes/SFight';
-import { SMapScene } from './scenes/SMap';
 import { SPoolScene } from './scenes/SPool';
 import { STitleScene } from './scenes/STitle';
+import { SWalkScene } from './scenes/SWalk';
 import { session } from './session';
 
 const game = new Phaser.Game({
@@ -22,7 +22,7 @@ const game = new Phaser.Game({
   roundPixels: true,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { activePointers: 2 },
-  scene: [SBootScene, STitleScene, SMapScene, SFightScene, SExploreScene, SPoolScene, SEndScene],
+  scene: [SBootScene, STitleScene, SWalkScene, SFightScene, SExploreScene, SPoolScene, SEndScene],
 });
 
 window.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });

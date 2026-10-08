@@ -9,6 +9,7 @@ import { session } from '../session';
 import { loadSalvage, writeSalvage } from '../storage';
 import { floatText, showDeck, wait } from '../ui';
 import { addBelly, deckButton, HpBar, muteButton } from './common';
+import { vk } from '../style';
 
 export class SPoolScene extends Phaser.Scene {
   private hp!: HpBar;
@@ -24,7 +25,7 @@ export class SPoolScene extends Phaser.Scene {
     this.busy = false;
     this.cameras.main.fadeIn(250, 10, 3, 8);
     addBelly(this, 'pink');
-    this.add.image(240, 168, 'prop_pool').setOrigin(0.5, 1).setDepth(10).setScale(1.5);
+    this.add.image(240, 168, vk('prop_pool')).setOrigin(0.5, 1).setDepth(10).setScale(1.5);
     new Label(this, W / 2, 8, 'AN ACID POOL', { align: 'center', scale: 2, color: C.accent, depth: 700 });
     new Label(this, W / 2, 26, 'IT BURNS, BUT IT ALSO CLEANS AND SOFTENS. CHOOSE ONE.', { align: 'center', color: C.text, depth: 700 });
     this.msg = new Label(this, W / 2, 38, '', { align: 'center', color: 0xffe9a8, depth: 700 });
@@ -96,7 +97,7 @@ export class SPoolScene extends Phaser.Scene {
     s.deepest = Math.max(s.deepest, run.step);
     writeSalvage();
     this.cameras.main.fadeOut(220, 10, 3, 8);
-    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('SMap'));
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('SWalk'));
   }
 }
 void H;

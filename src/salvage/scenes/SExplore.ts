@@ -10,6 +10,7 @@ import { session } from '../session';
 import { loadSalvage, writeSalvage } from '../storage';
 import { CW, floatText, makeCard, makeInteractive, showReward, wait, type CardView } from '../ui';
 import { addBelly, deckButton, HpBar, muteButton } from './common';
+import { vk } from '../style';
 
 const FLOOR_Y = Math.round(FP.yh + FP.camY * (FP.f / 5.5));
 const REST_Y = H - 112;
@@ -45,7 +46,7 @@ export class SExploreScene extends Phaser.Scene {
     this.views.clear();
     this.cameras.main.fadeIn(250, 10, 3, 8);
     addBelly(this, 'pink', this.kind === 'alcove' ? 0.35 : 0);
-    this.prop = this.add.image(FP.cx, FLOOR_Y + (this.kind === 'alcove' ? 8 : 0), `prop_${this.kind}`).setOrigin(0.5, 1).setDepth(10);
+    this.prop = this.add.image(FP.cx, FLOOR_Y + (this.kind === 'alcove' ? 8 : 0), vk(`prop_${this.kind}`)).setOrigin(0.5, 1).setDepth(10);
     this.add.ellipse(FP.cx, FLOOR_Y - 1, this.prop.displayWidth * 0.8, 10, 0, 0.4).setDepth(9);
     if (this.kind === 'alcove') {
       // darkness that the right light removes
@@ -172,6 +173,6 @@ export class SExploreScene extends Phaser.Scene {
     s.deepest = Math.max(s.deepest, run.step);
     writeSalvage();
     this.cameras.main.fadeOut(220, 10, 3, 8);
-    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('SMap'));
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('SWalk'));
   }
 }

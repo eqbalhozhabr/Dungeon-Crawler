@@ -5,7 +5,7 @@ export default defineConfig({
   base: './',
   define: { __TARGET__: JSON.stringify(process.env.VITE_TARGET ?? 'web') },
   build: {
-    outDir: 'dist-salvage',
+    outDir: process.env.SALVAGE_OUT ?? 'dist-salvage',
     emptyOutDir: true,
     chunkSizeWarningLimit: 2000,
     assetsInlineLimit: 0,

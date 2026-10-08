@@ -25,8 +25,8 @@ export interface CardView extends Phaser.GameObjects.Container {
   cardId: string;
 }
 
-/** One card: name banner, cost, picture, fight text (top face) and tool strip (bottom face). */
-export function makeCard(scene: Phaser.Scene, id: string, opts: { uid?: number; bonus?: number; temp?: boolean; state?: CardState } = {}): CardView {
+/** One card: name banner, cost, picture with the tool tags on it, fight text, and the tool strip at the bottom. */
+export function makeCard(scene: Phaser.Scene, id: string, opts: { uid?: number; bonus?: number; temp?: boolean; free?: boolean; state?: CardState } = {}): CardView {
   const def = CARDS[id];
   const state = opts.state ?? 'normal';
   const dim = state === 'dim';
@@ -39,36 +39,35 @@ export function makeCard(scene: Phaser.Scene, id: string, opts: { uid?: number; 
   c.add(rect(1, 0, CW - 2, CH, C.ink));
   c.add(rect(1, 1, CW - 2, CH - 2, edge));
   c.add(rect(2, 2, CW - 4, CH - 4, dim ? 0x8a8070 : 0xd6c9a8));
-  c.add(rect(2, CH - 40, CW - 4, 38, dim ? 0x7d7464 : 0xc8ba98));
+  c.add(rect(2, 54, CW - 4, 27, dim ? 0x7d7464 : 0xc8ba98));
   // banner
-  c.add(rect(2, 2, CW - 4, 11, opts.temp ? 0x2f7a3a : dim ? 0x3a3340 : 0x46364a));
+  c.add(rect(2, 2, CW - 4, 11, opts.free ? 0x2a5a9a : opts.temp ? 0x2f7a3a : dim ? 0x3a3340 : 0x46364a));
   c.add(new Label(scene, CW / 2 + 4, 4, def.name, { align: 'center', color: dim ? 0xaaa0aa : 0xf6ecd8, shadow: false }));
-  // picture
-  c.add(rect(6, 15, CW - 12, 28, dim ? 0x4a4250 : 0x2a2030));
-  c.add(rect(7, 16, CW - 14, 26, dim ? 0x5a5260 : def.rarity === 2 ? 0x6a4a1c : 0x3c3040));
-  const icon = scene.add.image(CW / 2, 29, `ic_${def.icon}`);
+  // picture, with the tool tags always visible (this is the card's second face)
+  c.add(rect(6, 15, CW - 12, 38, dim ? 0x4a4250 : 0x2a2030));
+  c.add(rect(7, 16, CW - 14, 36, dim ? 0x5a5260 : def.rarity === 2 ? 0x6a4a1c : 0x3c3040));
+  const icon = scene.add.image(CW / 2, 28, `ic_${def.icon}`);
   if (dim) icon.setTint(0x9a9090);
   c.add(icon);
+  if (def.tools.length) {
+    const w = (CW - 16) / def.tools.length;
+    def.tools.forEach((t, i) => {
+      c.add(rect(8 + i * w, 42, w - (i < def.tools.length - 1 ? 1 : 0), 9, dim ? 0x5a5060 : TOOL_COLOURS[t]));
+      c.add(new Label(scene, 8 + i * w + w / 2, 43, t, { align: 'center', color: C.ink, shadow: false }));
+    });
+  }
   // cost
   c.add(scene.add.circle(10, 19, 7.5, C.ink));
-  c.add(scene.add.circle(10, 19, 6, dim ? 0x9a9488 : 0xf4efe0));
-  c.add(new Label(scene, 10, 15, String(def.cost), { align: 'center', color: C.ink, shadow: false }));
+  c.add(scene.add.circle(10, 19, 6, dim ? 0x9a9488 : opts.free ? 0xa8d4ff : 0xf4efe0));
+  c.add(new Label(scene, 10, 15, String(opts.free ? 0 : def.cost), { align: 'center', color: C.ink, shadow: false }));
   if (opts.bonus) c.add(new Label(scene, CW - 8, 17, `+${opts.bonus}`, { align: 'right', color: 0xffd35a }));
   // fight text
   def.fightText.forEach((t, i) => {
-    if (t) c.add(new Label(scene, CW / 2, 55 + i * 8, t, { align: 'center', color: dim ? 0x5a5050 : 0x2a1a22, shadow: false }));
+    if (t) c.add(new Label(scene, CW / 2, 56 + i * 8, t, { align: 'center', color: dim ? 0x5a5050 : 0x2a1a22, shadow: false }));
   });
-  // tool strip
-  c.add(rect(4, CH - 14, CW - 8, 10, dim ? 0x3a3340 : 0x2a2030));
-  if (def.tools.length === 0) {
-    c.add(new Label(scene, CW / 2, CH - 12, 'NO TOOL', { align: 'center', color: 0x6a6070, shadow: false }));
-  } else {
-    const w = (CW - 10) / def.tools.length;
-    def.tools.forEach((t, i) => {
-      c.add(rect(5 + i * w, CH - 13, w - (i < def.tools.length - 1 ? 1 : 0), 8, dim ? 0x5a5060 : TOOL_COLOURS[t]));
-      c.add(new Label(scene, 5 + i * w + w / 2, CH - 12, t, { align: 'center', color: C.ink, shadow: false }));
-    });
-  }
+  // tool strip: what the back of the card does
+  c.add(rect(4, CH - 12, CW - 8, 9, dim ? 0x3a3340 : 0x2a2030));
+  c.add(new Label(scene, CW / 2, CH - 11, def.tools.length ? `TOOL: ${def.toolShort}`.slice(0, 10) : 'NO TOOL', { align: 'center', color: def.tools.length ? 0xe8d8b8 : 0x6a6070, shadow: false }));
   if (state === 'match') c.add(rect(2, 2, CW - 4, 2, 0xffffff));
   c.setSize(CW, CH);
   return c;
@@ -98,8 +97,14 @@ export const wait = (scene: Phaser.Scene, ms: number) => new Promise<void>((res)
 export function dimmer(scene: Phaser.Scene, alpha = 0.88): Phaser.GameObjects.Rectangle {
   const r = scene.add.rectangle(0, 0, W, H, 0x07030a, alpha).setOrigin(0).setDepth(1000);
   r.setInteractive();
+  scene.data.set('modal', (scene.data.get('modal') ?? 0) + 1);
   return r;
 }
+
+const release = (scene: Phaser.Scene) => scene.data.set('modal', Math.max(0, (scene.data.get('modal') ?? 1) - 1));
+
+/** True while an overlay (reward, deck, inspector) is open. */
+export const isModal = (scene: Phaser.Scene): boolean => (scene.data.get('modal') ?? 0) > 0;
 
 /** "Choose your reward - take only one" with an optional "No thanks". */
 export function showReward(
@@ -123,6 +128,7 @@ export function showReward(
   const finish = (id: string | null) => {
     if (done) return;
     done = true;
+    release(scene);
     objs.forEach((o) => o.destroy());
     onPick(id);
   };
@@ -177,6 +183,7 @@ export function showDeck(
   const finish = (uid: number | null) => {
     if (done) return;
     done = true;
+    release(scene);
     objs.forEach((o) => o.destroy());
     onDone(uid);
   };
@@ -201,4 +208,66 @@ export function showDeck(
     }
   });
   keep(new Button(scene, W / 2 - 45, H - 28, 90, 20, opts.backLabel ?? 'CLOSE', () => finish(null), { fill: 0x4a3340 })).setDepth(1001);
+}
+
+const FIXTURE_FOR_TOOL: Record<Tool, string> = { PRY: 'ACID VALVE', KEY: 'ACID VALVE', CUT: 'GOO CYST', DIG: 'GOO CYST', LIGHT: 'GLOW POD' };
+
+/** A big card face: the fight side or the tool side. */
+function makeFace(scene: Phaser.Scene, id: string, face: 'fight' | 'tool'): Phaser.GameObjects.Container {
+  const def = CARDS[id];
+  const W2 = 110;
+  const H2 = 150;
+  const c = scene.add.container(0, 0);
+  const rect = (x: number, y: number, w: number, h: number, col: number) => scene.add.rectangle(x, y, w, h, col).setOrigin(0);
+  c.add(rect(0, 0, W2, H2, C.ink));
+  c.add(rect(2, 2, W2 - 4, H2 - 4, face === 'fight' ? 0xd6c9a8 : 0xc4d2c0));
+  c.add(rect(2, 2, W2 - 4, 14, face === 'fight' ? 0x7a2a3a : 0x2a5a4a));
+  c.add(new Label(scene, W2 / 2, 5, face === 'fight' ? `${def.name} - FIGHT SIDE` : `${def.name} - TOOL SIDE`, { align: 'center', color: 0xf6ecd8, shadow: false }));
+  c.add(rect(10, 22, W2 - 20, 46, 0x2a2030));
+  c.add(scene.add.image(W2 / 2, 45, `ic_${def.icon}`).setScale(1.6));
+  const lines = face === 'fight' ? def.fightText : def.toolText;
+  lines.forEach((t, i) => t && c.add(new Label(scene, W2 / 2, 76 + i * 10, t, { align: 'center', color: C.ink, shadow: false, scale: 1 })));
+  if (face === 'fight') {
+    c.add(new Label(scene, W2 / 2, 112, `COST ${def.cost}${def.exhaust ? '  USED UP' : ''}`, { align: 'center', color: 0x5a2a3a, shadow: false }));
+    c.add(new Label(scene, W2 / 2, 124, 'ENEMIES PLAY THIS TOO', { align: 'center', color: 0x6a5a5a, shadow: false }));
+  } else if (def.tools.length) {
+    def.tools.forEach((t, i) => {
+      c.add(rect(8 + i * 48, 108, 46, 10, TOOL_COLOURS[t]));
+      c.add(new Label(scene, 8 + i * 48 + 23, 110, t, { align: 'center', color: C.ink, shadow: false }));
+      c.add(new Label(scene, 8 + i * 48 + 23, 122, FIXTURE_FOR_TOOL[t].split(' ')[1], { align: 'center', color: 0x2a4a3a, shadow: false }));
+    });
+    c.add(new Label(scene, W2 / 2, 136, def.toolConsumes ? 'USED UP FOR GOOD' : 'KEPT AFTER USE', { align: 'center', color: 0x4a5a4a, shadow: false }));
+  } else c.add(new Label(scene, W2 / 2, 112, 'NOTHING TO OPEN HERE', { align: 'center', color: 0x6a6a5a, shadow: false }));
+  c.setSize(W2, H2);
+  return c;
+}
+
+/** Both faces of a card side by side; the back flips over. */
+export function showInspect(scene: Phaser.Scene, ids: string[], title: string, sub: string, onClose?: () => void): void {
+  const objs: Phaser.GameObjects.GameObject[] = [];
+  const keep = <T extends Phaser.GameObjects.GameObject>(o: T): T => {
+    objs.push(o);
+    return o;
+  };
+  const dim = keep(dimmer(scene, 0.9));
+  keep(new Label(scene, W / 2, 10, title, { align: 'center', scale: 2, color: C.accent, depth: 1001 }));
+  keep(new Label(scene, W / 2, 30, sub, { align: 'center', color: C.textDim, depth: 1001 }));
+  const id = ids[0];
+  const front = keep(makeFace(scene, id, 'fight')).setDepth(1001);
+  const back = keep(makeFace(scene, id, 'tool')).setDepth(1001);
+  front.setPosition(W / 2 - 120, 52);
+  back.setPosition(W / 2 + 10, 52);
+  back.setScale(0, 1).setX(W / 2 + 65);
+  scene.tweens.add({ targets: back, scaleX: 1, x: W / 2 + 10, duration: 320, delay: 250, ease: 'Cubic.easeOut' });
+  if (ids.length > 1) keep(new Label(scene, W / 2, 208, `ALSO HOLDS: ${ids.slice(1).map((i) => CARDS[i].name).join(', ')}`, { align: 'center', color: C.textDim, depth: 1001 }));
+  let done = false;
+  const close = () => {
+    if (done) return;
+    done = true;
+    release(scene);
+    objs.forEach((o) => o.destroy());
+    onClose?.();
+  };
+  dim.on('pointerup', close);
+  keep(new Button(scene, W / 2 - 40, H - 28, 80, 20, 'CLOSE', close, { fill: 0x4a3340 })).setDepth(1001);
 }

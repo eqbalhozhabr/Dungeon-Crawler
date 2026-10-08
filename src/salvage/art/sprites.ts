@@ -4,6 +4,12 @@ import { Px } from '../../art/pixel';
 import { PAL } from '../../logic/levels';
 
 const INK = 0x140b12;
+/** true while drawing the black-and-white cartoon twin of every sprite */
+let VINTAGE_DRAW = false;
+const ol = (p: Px) => {
+  p.outline(INK);
+  if (VINTAGE_DRAW) p.outline(INK);
+};
 type Ramp = [number, number, number, number];
 
 const lit = (r: Ramp) => (dx: number, dy: number): number => {
@@ -17,6 +23,12 @@ function eye(p: Px, x: number, y: number, r: number, look = 0): void {
   p.ellipse(x, y, r - 1, r - 1, (dx, dy) => (dx + dy < 0.4 ? 0xfdf6e3 : 0xd8cdb4));
   p.ellipse(x + look, y + 0.5, r * 0.45, r * 0.5, INK);
   p.set(x + look - 1, y - 1, 0xffffff);
+  if (VINTAGE_DRAW && r >= 3) {
+    // pie-cut pupil
+    p.set(x + look + 1, y - 1, 0xfdf6e3);
+    p.set(x + look + 1, y, 0xfdf6e3);
+    p.set(x + look, y - 1, 0xfdf6e3);
+  }
 }
 function legs(p: Px, cx: number, cy: number, spread: number, n: number, len: number, c: number): void {
   for (let i = 0; i < n; i++) {
@@ -26,6 +38,7 @@ function legs(p: Px, cx: number, cy: number, spread: number, n: number, len: num
     const x1 = cx + side * (spread * 0.4 + k * 3 + len);
     p.line(x0, cy, x1, cy + 5 + k, c);
     p.line(x1, cy + 5 + k, x1 + side * 2, cy + 9 + k, c);
+    if (VINTAGE_DRAW) p.ellipse(x1 + side * 2, cy + 9 + k, 2.6, 2.6, 0xffffff); // white glove
   }
 }
 function mouth(p: Px, cx: number, cy: number, rx: number, ry: number, teeth: number): void {
@@ -54,7 +67,7 @@ const ENEMY_SPRITES: Record<string, () => Px> = {
     p.line(40, 14, 44, 9, 0x5a2a18);
     p.rect(30, 33, 2, 4, 0xfdf6e3);
     p.rect(35, 33, 2, 4, 0xfdf6e3);
-    p.outline(INK);
+    ol(p);
     return p;
   },
   tick: () => {
@@ -66,7 +79,7 @@ const ENEMY_SPRITES: Record<string, () => Px> = {
     eye(p, 31, 17, 3);
     p.rect(25, 21, 2, 3, 0xfdf6e3);
     for (const [x, y] of [[18, 28], [34, 30], [26, 33]]) p.set(x, y, 0xffb0b8);
-    p.outline(INK);
+    ol(p);
     return p;
   },
   slug: () => {
@@ -84,7 +97,7 @@ const ENEMY_SPRITES: Record<string, () => Px> = {
       p.set(x, 45, 0xc8ff8a);
     }
     p.ellipse(14, 31, 5, 2, 0x1c4a1c);
-    p.outline(INK);
+    ol(p);
     return p;
   },
   leech: () => {
@@ -99,7 +112,24 @@ const ENEMY_SPRITES: Record<string, () => Px> = {
     eye(p, 36, 24, 3);
     p.ellipse(70, 44, 14, 8, 0x5a2058);
     p.ellipse(76, 46, 10, 6, 0x34123a);
-    p.outline(INK);
+    ol(p);
+    return p;
+  },
+  thief: () => {
+    const p = new Px(56, 50);
+    p.ellipse(34, 40, 14, 8, 0x6a4122); // stolen sack on its back
+    p.ellipse(34, 38, 12, 8, 0x9a6232);
+    p.rect(32, 30, 4, 3, 0xd8c8a0);
+    legs(p, 24, 32, 12, 6, 8, 0x2a2040);
+    blob(p, 24, 28, 17, 14, [0x2a1a46, 0x5a3a8a, 0x8a66c4, 0xc8aaff]);
+    p.rect(8, 22, 34, 6, INK); // bandit mask
+    eye(p, 17, 25, 3, 1);
+    eye(p, 31, 25, 3, -1);
+    blob(p, 24, 13, 9, 5, [0x2a2a2a, 0x4a4a4a, 0x6a6a6a, 0x8a8a8a]); // cap
+    p.rect(14, 16, 22, 2, 0x2a2a2a);
+    p.rect(22, 33, 3, 3, 0xfdf6e3);
+    p.rect(27, 33, 3, 3, 0xfdf6e3);
+    ol(p);
     return p;
   },
   warden: () => {
@@ -120,7 +150,7 @@ const ENEMY_SPRITES: Record<string, () => Px> = {
     // keys on a ring: it is the warden
     for (let k = 0; k < 3; k++) p.rect(10 + k * 3, 56 + k * 4, 5, 3, 0xffc93c);
     p.line(8, 54, 12, 66, 0xaaa);
-    p.outline(INK);
+    ol(p);
     return p;
   },
   mama: () => {
@@ -137,7 +167,7 @@ const ENEMY_SPRITES: Record<string, () => Px> = {
     p.line(61, 17, 83, 25, INK);
     p.line(139, 17, 117, 25, INK);
     for (const x of [78, 100, 122]) p.rect(x, 90, 3, 10, 0x76d24a);
-    p.outline(INK);
+    ol(p);
     return p;
   },
 };
@@ -160,7 +190,7 @@ const PROP_SPRITES: Record<string, () => Px> = {
     }
     p.ellipse(55, 40, 7, 7, (dx, dy) => (dx + dy < -0.2 ? 0xe9f1f8 : 0x6f7f96));
     for (let i = 0; i < 6; i++) p.set(20 + i * 14, 98, 0xb06a40); // rust
-    p.outline(INK);
+    ol(p);
     return p;
   },
   cyst: () => {
@@ -172,7 +202,7 @@ const PROP_SPRITES: Record<string, () => Px> = {
     for (let i = 0; i < 7; i++) p.line(55, 56, 14 + i * 14, 20 + (i % 2) * 70, 0xa0304e);
     for (let i = 0; i < 4; i++) p.set(30 + i * 15, 24 + (i % 2) * 4, 0xffffff);
     p.rect(52, 48, 6, 6, 0xffd042);
-    p.outline(INK);
+    ol(p);
     return p;
   },
   alcove: () => {
@@ -187,7 +217,7 @@ const PROP_SPRITES: Record<string, () => Px> = {
       p.set(x - 1, y + 1, c);
     }
     p.rect(8, 118, 104, 12, 0x52213a);
-    p.outline(INK);
+    ol(p);
     return p;
   },
   corpse: () => {
@@ -205,7 +235,19 @@ const PROP_SPRITES: Record<string, () => Px> = {
     p.rect(104, 56, 12, 8, 0x6a4122);
     p.rect(108, 58, 14, 6, 0x3b2314);
     p.line(80, 40, 96, 26, 0x4a6a40);
-    p.outline(INK);
+    ol(p);
+    return p;
+  },
+  pod: () => {
+    const p = new Px(100, 110);
+    p.rect(44, 60, 12, 50, 0x3a6a4a);
+    p.rect(44, 60, 4, 50, 0x6aa87a);
+    p.ellipse(50, 40, 30, 26, (_dx, _dy, g) => (g < 0.18 ? 0xf0ffff : g < 0.45 ? 0xa8f4ff : g < 0.8 ? 0x4ac8e8 : 0x2878a8));
+    p.ellipse(42, 30, 8, 5, 0xffffff);
+    for (const [x, y] of [[20, 20], [82, 24], [14, 52], [88, 58], [50, 6]]) {
+      p.rect(x, y, 3, 3, 0xa8f4ff);
+    }
+    ol(p);
     return p;
   },
   pool: () => {
@@ -216,10 +258,20 @@ const PROP_SPRITES: Record<string, () => Px> = {
       p.ellipse(x, y, 4, 2, 0xd4ff7a);
       p.set(x, y - 3, 0xffffff);
     }
-    p.outline(INK);
+    ol(p);
     return p;
   },
 };
+
+/** The outlines wobble from frame to frame ("boil"): shift bands of rows by a pixel. */
+function boilPx(src: Px): Px {
+  const o = new Px(src.w, src.h);
+  for (let y = 0; y < src.h; y++) {
+    const off = ((Math.imul(y >> 2, 2654435761) >>> 28) % 3) - 1;
+    for (let x = 0; x < src.w; x++) o.set(x + off, y, src.get(x, y));
+  }
+  return o;
+}
 
 export function generateSalvageArt(scene: Phaser.Scene): void {
   const put = (key: string, px: Px) => {
@@ -228,6 +280,14 @@ export function generateSalvageArt(scene: Phaser.Scene): void {
   };
   for (const [k, f] of Object.entries(ENEMY_SPRITES)) put(`en_${k}`, f());
   for (const [k, f] of Object.entries(PROP_SPRITES)) put(`prop_${k}`, f());
+  VINTAGE_DRAW = true;
+  for (const [k, f] of Object.entries(ENEMY_SPRITES)) {
+    const base = f();
+    put(`en_${k}_v`, base);
+    put(`en_${k}_v1`, boilPx(base));
+  }
+  for (const [k, f] of Object.entries(PROP_SPRITES)) put(`prop_${k}_v`, f());
+  VINTAGE_DRAW = false;
   for (const [name, pal] of Object.entries({ pink: PAL.pink, rust: PAL.rust })) {
     for (let b = 0; b < 2; b++) put(`sv_bg_${name}_${b}`, drawTunnel(pal, b, false));
   }
@@ -240,4 +300,13 @@ export function generateSalvageArt(scene: Phaser.Scene): void {
   bolt.ascii(0, 0, ['....##...', '...###...', '..###....', '.######..', '...###...', '..###....', '..##.....', '.#.......'], { '#': 0xffd35a });
   bolt.outline(INK);
   put('ui_bolt', bolt);
+}
+
+export const WALK_FRAMES = 8;
+
+/** The tunnel as seen while walking: the same cells, shifted forward by 1/8 of a cell per frame (loops seamlessly). */
+export function ensureWalkFrames(scene: Phaser.Scene, name: 'pink' | 'rust'): void {
+  if (scene.textures.exists(`sv_walk_${name}_0`)) return;
+  const pal = name === 'pink' ? PAL.pink : PAL.rust;
+  for (let k = 0; k < WALK_FRAMES; k++) scene.textures.addCanvas(`sv_walk_${name}_${k}`, drawTunnel(pal, 0, false, k / WALK_FRAMES).toCanvas());
 }

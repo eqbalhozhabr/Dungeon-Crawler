@@ -13,8 +13,9 @@
     "sim": "tsx scripts/sim.ts",
     "smoke": "node scripts/smoke.mjs",
     "dev:salvage": "vite -c vite.salvage.config.ts",
-    "build:salvage": "tsc --noEmit && vite build -c vite.salvage.config.ts && mv dist-salvage/salvage.html dist-salvage/index.html",
-    "sim:salvage": "tsx scripts/salvage-sim.ts"
+    "build:salvage": "tsc --noEmit && vite build -c vite.salvage.config.ts && mv ${SALVAGE_OUT:-dist-salvage}/salvage.html ${SALVAGE_OUT:-dist-salvage}/index.html",
+    "sim:salvage": "tsx scripts/salvage-sim.ts",
+    "test:salvage": "tsx scripts/salvage-rules.ts"
   },
   "dependencies": {
     "phaser": "3.90.0"

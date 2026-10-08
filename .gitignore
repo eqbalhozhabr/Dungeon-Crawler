@@ -6,3 +6,5 @@ releases
 *.log
 shots
 dist-salvage
+dist-salvage-dbg
+shots-v

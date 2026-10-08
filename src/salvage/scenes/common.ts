@@ -5,6 +5,7 @@ import { Button } from '../../ui/button';
 import { Label } from '../../ui/label';
 import { showDeck } from '../ui';
 import { session } from '../session';
+import { applyStyle } from '../style';
 
 /** Belly background with the two "boil" frames, vignette and grain on top. Returns a stop() for cleanup. */
 export function addBelly(scene: Phaser.Scene, pal: 'pink' | 'rust' = 'pink', dimAlpha = 0): void {
@@ -30,6 +31,7 @@ export function addBelly(scene: Phaser.Scene, pal: 'pink' | 'rust' = 'pink', dim
     },
   });
   if (dimAlpha > 0) scene.add.rectangle(0, 0, W, H, C.ink, dimAlpha).setOrigin(0).setDepth(2);
+  applyStyle(scene);
 }
 
 /** HP readout used by the map and the rooms: heart, bar, numbers. */
@@ -77,4 +79,20 @@ export function deckButton(scene: Phaser.Scene, x: number, y: number, onClose?: 
     },
     { fill: 0x3a2a4a },
   ).setDepth(700) as Button;
+}
+
+/** Vignette and grain only (the walking tunnel frames change every frame, so no boil timer). */
+export function addWalkOverlays(scene: Phaser.Scene): void {
+  scene.add.image(0, 0, 'fx_vignette').setOrigin(0).setDepth(600).setAlpha(0.85);
+  const grain = scene.add.image(0, 0, 'fx_grain_0').setOrigin(0).setDepth(601).setAlpha(0.5);
+  let g = 0;
+  scene.time.addEvent({
+    delay: 110,
+    loop: true,
+    callback: () => {
+      g = (g + 1) % 3;
+      grain.setTexture(`fx_grain_${g}`);
+    },
+  });
+  applyStyle(scene);
 }

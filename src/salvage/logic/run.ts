@@ -1,7 +1,7 @@
 import { Rng } from '../../rng';
 import { CARDS, REWARD_POOL, STARTING_DECK } from './cards';
-import type { Mood } from './combat';
-import type { CardInst, RoomKind, Tool } from './types';
+import type { CombatOpts, Mood } from './combat';
+import type { CardInst, FightVariant, FixtureKind, RoomKind, Tool } from './types';
 
 export const MAX_HP = 40;
 export const START_HP = 40;
@@ -10,22 +10,54 @@ export interface Room {
   kind: RoomKind;
   enemies?: string[];
   mood?: Mood;
+  variant?: FightVariant;
+  fixtures?: FixtureKind[];
+}
+
+export const VARIANT_NAMES: Record<FightVariant, string> = {
+  plain: 'FIGHT',
+  thief: 'THIEF!',
+  acid: 'RISING ACID',
+  ambush: 'AMBUSH',
+};
+
+export function combatOpts(room: Room): CombatOpts {
+  return {
+    mood: room.mood ?? 'calm',
+    fixtures: room.fixtures ?? [],
+    acidFrom: room.variant === 'acid' ? 3 : undefined,
+    ambush: room.variant === 'ambush',
+  };
 }
 
 /** One belly = one path of 8 steps; most steps give a choice of two rooms. */
 export function makeMap(rng: Rng): Room[][] {
   const hic = (): Mood => (rng.chance(0.5) ? 'hiccup' : 'calm');
-  const fight = (enemies: string[], mood: Mood = hic()): Room => ({ kind: 'fight', enemies, mood });
+  const fix = (): FixtureKind[] => [rng.pick(['valve', 'cyst', 'pod'] as FixtureKind[])];
+  const fight = (variant: FightVariant): Room => {
+    const sets: Record<FightVariant, string[][]> = {
+      plain: [['slug', 'mite'], ['leech', 'tick']],
+      thief: [['thief', 'mite'], ['thief', 'tick', 'tick']],
+      acid: [['mite', 'leech'], ['tick', 'slug']],
+      ambush: [['tick', 'slug'], ['mite', 'mite']],
+    };
+    return { kind: 'fight', enemies: rng.pick(sets[variant]), mood: hic(), variant, fixtures: fix() };
+  };
+  const pair = rng.shuffle(['plain', 'thief', 'acid', 'ambush'] as FightVariant[]).slice(0, 2);
+  const late = rng.shuffle(['plain', 'acid', 'ambush'] as FightVariant[])[0];
   const explorePair = (): Room[] => rng.shuffle([{ kind: 'valve' }, { kind: 'cyst' }] as Room[]);
   return [
     [{ kind: 'corpse' }],
-    [fight(['mite', 'tick'], 'calm')],
+    [{ kind: 'fight', enemies: ['mite', 'tick'], mood: 'calm', variant: 'plain', fixtures: ['valve'] }],
     explorePair(),
-    [rng.chance(0.5) ? fight(['slug', 'mite']) : fight(['leech', 'tick'])],
+    pair.map(fight),
     [{ kind: 'pool' }, { kind: 'alcove' }],
-    [fight(['slug', 'leech', 'tick']), { kind: 'elite', enemies: ['tick', 'warden'], mood: hic() }],
+    [
+      { kind: 'fight', enemies: ['slug', 'leech', 'tick'], mood: hic(), variant: late, fixtures: fix() },
+      { kind: 'elite', enemies: ['tick', 'warden'], mood: hic(), variant: 'plain', fixtures: fix() },
+    ],
     rng.chance(0.5) ? [{ kind: 'valve' }, { kind: 'alcove' }] : [{ kind: 'cyst' }, { kind: 'pool' }],
-    [{ kind: 'boss', enemies: ['tick', 'mama', 'tick'], mood: 'hiccup' }],
+    [{ kind: 'boss', enemies: ['tick', 'mama', 'tick'], mood: 'hiccup', variant: 'plain', fixtures: ['valve', 'cyst'] }],
   ];
 }
 

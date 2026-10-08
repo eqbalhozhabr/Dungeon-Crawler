@@ -51,7 +51,7 @@ export function castRay(x: number, y: number) {
   return { d, surf, X: dx * d, Y: FP.camY - dy * d };
 }
 
-export function drawTunnel(pal: number[], boil: number, belt = true): Px {
+export function drawTunnel(pal: number[], boil: number, belt = true, shift = 0): Px {
   const px = new Px(W, H);
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
@@ -61,7 +61,7 @@ export function drawTunnel(pal: number[], boil: number, belt = true): Px {
         continue;
       }
       const u = (surf === 'wall' ? Y : X) * 1.25;
-      const v = d * 1.0 + (surf === 'wall' ? (X > 0 ? 3.7 : 0) : 0);
+      const v = d * 1.0 + shift + (surf === 'wall' ? (X > 0 ? 3.7 : 0) : 0);
       const { f1, f2 } = voronoi(u, v, boil);
       const edge = f2 - f1;
       const fog = Math.max(0, Math.min(1, 1 - (d - 2.5) / 10.5));

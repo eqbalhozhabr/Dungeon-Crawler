@@ -73,7 +73,12 @@ async function playFight(tag) {
         cost: Object.fromEntries(s.cb.hand.map((c) => [c.uid, window.__cards ? window.__cards[c.id].cost : 9])),
       };
     });
-    if (st.overlay) return 'reward';
+    if (st.overlay) {
+      const o = await overlay();
+      if (o.cards.length) return 'reward';
+      await click(240, 242); // an inspector is open: close it
+      continue;
+    }
     if (st.busy || st.result) continue;
     // choose a card the energy allows (cost looked up from the deck definitions on the page)
     const info = await page.evaluate(() => {
@@ -83,10 +88,12 @@ async function playFight(tag) {
     void info;
     const pick = await page.evaluate(() => {
       const s = window.__phaser.scene.getScene('SFight');
-      const playable = s.cb.hand.filter((c) => s.cards.get(c.uid) && s.cb.canPlay(c.uid, s.cb.alive()[0]));
+      const playable = s.cb.hand.filter((c) => s.cards.get(c.uid) && (s.cb.canPlay(c.uid, s.cb.alive()[0]) || s.cb.toolTargets(c.uid).length));
       if (!playable.length) return null;
       const c = playable[Math.floor(Math.random() * playable.length)];
-      return { uid: c.uid, needsEnemy: s.cb.canPlay(c.uid) === false };
+      const tt = s.cb.toolTargets(c.uid);
+      const useTool = tt.length > 0 && Math.random() < 0.5;
+      return { uid: c.uid, needsEnemy: s.cb.canPlay(c.uid) === false, tool: useTool ? tt[0] : null, fx: useTool ? s.fx[tt[0]].x : 0 };
     });
     if (!pick) {
       await click(400, 220); // END TURN button
@@ -96,7 +103,10 @@ async function playFight(tag) {
     const v = st.view[pick.uid];
     const cx = v.x + 33, cy = Math.max(v.y + 24, 230);
     const target = st.en[Math.floor(Math.random() * st.en.length)];
-    if (pick.needsEnemy) {
+    if (pick.tool !== null) {
+      await click(cx, cy); await page.waitForTimeout(80);
+      await click(pick.fx, 98);
+    } else if (pick.needsEnemy) {
       if (firstDrag) { firstDrag = false; await drag(cx, cy, target.x, target.y); }
       else { await click(cx, cy); await page.waitForTimeout(60); await click(target.x, target.y); }
     } else {
@@ -113,17 +123,26 @@ for (let r = 0; r < RUNS; r++) {
   await page.waitForTimeout(500);
   await click(240, 238); // START RUN
   await page.waitForTimeout(600);
-  must((await scene()) === 'SMap', 'map after start');
+  must((await scene()) === 'SWalk', 'walk scene after start');
   for (let step = 0; step < 12; step++) {
     const sc = await scene();
     if (sc === 'SEnd') break;
     await page.waitForTimeout(500);
-    if (sc === 'SMap') {
-      const info = await page.evaluate(() => { const r = window.__sv.run; return { step: r.step, n: r.map[r.step].length, total: r.map.length }; });
-      const x = 36 + info.step * ((480 - 72) / (info.total - 1));
-      const y = 128 + (info.n === 1 ? 0 : (Math.floor(Math.random() * info.n) - 0.5) * 70);
-      await click(x, y);
-      await page.waitForTimeout(900);
+    if (sc === 'SWalk') {
+      // wait for the walk to end; at a fork tap one of the tunnel mouths
+      for (let w = 0; w < 40; w++) {
+        await page.waitForTimeout(250);
+        const st = await page.evaluate(() => { const s = window.__phaser.scene.getScene('SWalk'); return s ? { walking: s.walking, entering: s.entering, mouths: s.mouths.map((m) => ({ x: m.c.x, y: m.c.y })) } : null; });
+        if (!st) break;
+        if (st.entering) break;
+        if (!st.walking && st.mouths.length) {
+          if (step === 0 && r === 0) await page.screenshot({ path: `${shots}/smoke_fork.png` });
+          const m = st.mouths[Math.floor(Math.random() * st.mouths.length)];
+          await click(m.x, m.y);
+          break;
+        }
+      }
+      await page.waitForTimeout(1200);
     }
     const s2 = await scene();
     log(`run ${r} step ${step} scene ${s2}`);

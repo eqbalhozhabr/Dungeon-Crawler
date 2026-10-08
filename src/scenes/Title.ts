@@ -57,22 +57,22 @@ export class TitleScene extends Phaser.Scene {
     const bug = this.add.image(380, 170, 'bug_0_0').setScale(2).setFlipX(true);
     this.time.addEvent({ delay: 380, loop: true, callback: () => bug.setTexture(bug.texture.key.endsWith('_0') ? 'bug_0_1' : 'bug_0_0') });
 
-    new Button(this, W / 2 - 60, 192, 120, 26, 'PLAY', () => this.start(), { scale: 2, fill: 0x2e7a3a });
-    new Button(this, W / 2 - 100, 226, 90, 20, 'HOW TO PLAY', () => showHelp(this, () => undefined), { fill: 0x5a3a7a });
-    const snd = new Button(this, W / 2 + 10, 226, 90, 20, sfx.muted ? 'SOUND: OFF' : 'SOUND: ON', () => {
+    new Button(this, W / 2 - 60, 184, 120, 26, 'PLAY', () => this.start(), { scale: 2, fill: 0x2e7a3a });
+    new Button(this, W / 2 - 100, 216, 90, 20, 'HOW TO PLAY', () => showHelp(this, () => undefined), { fill: 0x5a3a7a });
+    const snd = new Button(this, W / 2 + 10, 216, 90, 20, sfx.muted ? 'SOUND: OFF' : 'SOUND: ON', () => {
       sfx.setMuted(!sfx.muted);
       snd.setLabel(sfx.muted ? 'SOUND: OFF' : 'SOUND: ON');
     }, { fill: 0x5a3a7a });
     const extras = loadSave().extras;
-    new Label(this, W / 2, 242, `DECK: ${BASE_DECK.length + extras.length} CARDS${extras.length ? ` (+${extras.length} REWARDS)` : ''}`, { align: 'center', color: C.textDim, shadow: false });
+    new Label(this, W / 2, 240, `DECK: ${BASE_DECK.length + extras.length} CARDS${extras.length ? ` (+${extras.length} REWARDS)` : ''}`, { align: 'center', color: C.textDim, shadow: false });
     if (extras.length) {
-      new Button(this, W - 100, 246, 92, 16, 'RESET DECK', () => {
+      new Button(this, W - 100, 238, 92, 16, 'RESET DECK', () => {
         loadSave().extras = [];
         writeSave();
         this.scene.restart();
       }, { fill: 0x7a2a45 });
     }
-    new Label(this, W / 2, 254, 'PROTOTYPE V0.2', { align: 'center', color: C.textDim, shadow: false });
+    new Label(this, W / 2, 249, 'PROTOTYPE V0.2', { align: 'center', color: C.textDim, shadow: false });
 
     this.input.keyboard?.on('keydown-ENTER', () => this.start());
     this.input.keyboard?.on('keydown-SPACE', () => this.start());

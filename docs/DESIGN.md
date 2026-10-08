@@ -1,4 +1,4 @@
-# Design notes (prototype v0.2)
+# Intestine Crawler: design notes (prototype v0.2)
 
 ## Pitch
 You are a tiny miner inside a creature. Each level is a different creature. Gems float down its

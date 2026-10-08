@@ -10,7 +10,7 @@ const m = html.match(/<script type="module"[^>]*src="\.\/(assets\/[^"]+)"[^>]*><
 if (!m) throw new Error('bundle script tag not found in dist/index.html');
 const js = fs.readFileSync(path.join(dist, m[1]), 'utf8').replace(/<\/script/gi, '<\\/script');
 
-const page = `<title>Down the Hatch</title>
+const page = `<title>Intestine Crawler</title>
 <style>
   :root { --bg: #1a0a14; --fg: #f4e3d7; color-scheme: dark; }
   html, body { height: 100%; margin: 0; padding: 0; background: var(--bg); color: var(--fg); overflow: hidden;

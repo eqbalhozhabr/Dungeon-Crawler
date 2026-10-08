@@ -31,7 +31,7 @@ const external = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('request', (r) => { if (!r.url().startsWith(origin) && !r.url().startsWith('data:') && !r.url().startsWith('blob:')) external.push(r.url()); });
 const VIEW = process.env.VIEW ?? 'fp';
-await page.addInitScript((v) => { try { if (!localStorage.getItem('dth_save_v1')) localStorage.setItem('dth_save_v1', JSON.stringify({ view: v })); } catch (e) {} }, VIEW);
+await page.addInitScript((v) => { try { if (!localStorage.getItem('ic_save_v1')) localStorage.setItem('ic_save_v1', JSON.stringify({ view: v })); } catch (e) {} }, VIEW);
 await page.goto(`${origin}/?seed=${seed}`);
 await page.waitForTimeout(800);
 const box0 = await page.evaluate(() => { const r = document.querySelector('canvas').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
@@ -107,7 +107,7 @@ if (process.env.REWARD && (await page.evaluate(() => window.__gut.scene.g.phase)
   await page.screenshot({ path: `${shots}/reward.png` });
   await page.mouse.click(...px(102, 118)); // first card
   await page.waitForTimeout(2200);
-  const extras = await page.evaluate(() => JSON.parse(localStorage.getItem('dth_save_v1')).extras);
+  const extras = await page.evaluate(() => JSON.parse(localStorage.getItem('ic_save_v1')).extras);
   console.log('reward saved, extras =', JSON.stringify(extras));
   await page.screenshot({ path: `${shots}/nextrun.png` });
 }

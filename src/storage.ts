@@ -1,6 +1,7 @@
 // Progress lives in localStorage (CrazyGames backs it up automatically). Every access is guarded:
 // it can throw or come back empty in private windows / blocked-storage previews.
-const KEY = 'dth_save_v1';
+const KEY = 'ic_save_v1';
+const OLD_KEY = 'dth_save_v1'; // early prototype name, read once so nobody loses their deck
 
 import type { ToolId } from './logic/types';
 
@@ -22,7 +23,7 @@ let cache: Save | null = null;
 export function loadSave(): Save {
   if (cache) return cache;
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(OLD_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<Save>;
       cache = { ...DEFAULT, ...parsed, extras: [...(parsed.extras ?? [])], best: { ...(parsed.best ?? {}) } };

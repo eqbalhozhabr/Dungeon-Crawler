@@ -1,6 +1,6 @@
-# Down the Hatch (working title)
+# Intestine Crawler
 
-A tiny miner has been swallowed by a creature. Dig the gems out of its belly, zap the bugs
+A dungeon crawler where the dungeon is a gut. A tiny miner has been swallowed by a creature. Dig the gems out of its belly, zap the bugs
 before they reach the acid, and **escape out of the other end before you are digested**.
 
 Turn-based tool-card puzzle for the browser (desktop + touch), built for the CrazyGames

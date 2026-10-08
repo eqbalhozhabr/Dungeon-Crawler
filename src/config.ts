@@ -2,7 +2,7 @@
 export const W = 480;
 export const H = 270;
 
-export const GAME_TITLE = 'Down the Hatch'; // working title - check originality before release
+export const GAME_TITLE = 'Intestine Crawler'; // no game with this exact name found in a quick search (Oct 2026); re-check before release
 
 export const CELL = 32;
 export const BOARD_X = 40;

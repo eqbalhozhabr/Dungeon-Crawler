@@ -1,6 +1,6 @@
 export type Colour = 0 | 1 | 2 | 3;
 export type Kind = 'gem' | 'bug' | 'bone';
-export type ToolId = 'pick' | 'zapper' | 'net' | 'shove';
+export type ToolId = 'pick' | 'zapper' | 'net' | 'shove' | 'magnet' | 'broom' | 'antidote';
 
 export interface Cell {
   id: number;
@@ -28,6 +28,7 @@ export type GameEvent =
   | { t: 'acid'; id: number; r: number; kind: Kind; colour: Colour }
   | { t: 'incoming'; id: number; r: number; kind: Kind; colour: Colour }
   | { t: 'infect'; colour: Colour; level: number }
+  | { t: 'heal'; colour: Colour; level: number }
   | { t: 'lost'; reason: 'sick' | 'digested' };
 
 export interface LevelDef {
@@ -40,6 +41,8 @@ export interface LevelDef {
   maxEnergy: number;
   handSize: number;
   infectionMax: number;
+  /** How many columns nearest the acid the player can touch (the rest is "out of reach"). */
+  reach: number;
   deck: ToolId[];
   spawn: { pBug: number; pGem: number; pBone: number };
   initialColumns: number;

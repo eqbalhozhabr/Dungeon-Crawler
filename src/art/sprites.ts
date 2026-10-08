@@ -319,6 +319,93 @@ function drawIcons(scene: Phaser.Scene): void {
   }
 }
 
+function drawMoreIcons(scene: Phaser.Scene): void {
+  const k = INK;
+  // magnet: red horseshoe with silver tips
+  const mg = new Px(13, 13);
+  for (let y = 0; y < 13; y++)
+    for (let x = 0; x < 13; x++) {
+      const dx = x + 0.5 - 6.5, dy = y + 0.5 - 6.2;
+      const r = Math.hypot(dx, dy);
+      if (y <= 6 && r <= 6 && r >= 2.9) mg.set(x, y, dx + dy < -2 ? 0xff7a8a : 0xd8344a);
+      else if (y > 6 && y <= 10 && ((x >= 1 && x <= 3) || (x >= 9 && x <= 11))) mg.set(x, y, x === 1 || x === 9 ? 0xff7a8a : 0xd8344a);
+      else if (y > 10 && y <= 12 && ((x >= 1 && x <= 3) || (x >= 9 && x <= 11))) mg.set(x, y, 0xe8f0ff);
+    }
+  mg.outline(k);
+  add(scene, 'ico_magnet', mg);
+
+  // broom
+  const br = new Px(13, 13);
+  br.ascii(0, 0, [
+    '..........kk.',
+    '.........kwwk',
+    '........kwwk.',
+    '.......kwwk..',
+    '......kwwk...',
+    '....kkkwk....',
+    '...kYYYYYkk..',
+    '..kYyYyYyYYk.',
+    '.kYyYyYyYyYk.',
+    '.kYyYyYyYyYk.',
+    '..kkkkkkkkk..',
+    '.............',
+    '.............',
+  ], { k, w: 0xa8683a, Y: 0xf0b92a, y: 0xb8800e });
+  add(scene, 'ico_broom', br);
+
+  // antidote bottle
+  const an = new Px(13, 13);
+  an.ascii(0, 0, [
+    '....kkkk.....',
+    '....kwwk.....',
+    '....kwwk.....',
+    '...kkwwkk....',
+    '..kggggggk...',
+    '.kgGGggggk...',
+    '.kgGgggggk...',
+    '.kgggggggk...',
+    '.kgggggggk...',
+    '..kgggggk....',
+    '...kkkkk.....',
+    '.............',
+    '.............',
+  ], { k, w: 0xe8dcc0, g: 0x2fc06a, G: 0xb0ffd0 });
+  add(scene, 'ico_antidote', an);
+
+  // danger marker
+  const wn = new Px(9, 12);
+  wn.ascii(0, 0, [
+    '....k....',
+    '...kRk...',
+    '..kRRRk..',
+    '..kRwRk..',
+    '.kRRwRRk.',
+    '.kRRwRRk.',
+    'kRRRwRRRk',
+    'kRRRRRRRk',
+    'kRRRwRRRk',
+    'kRRRRRRRk',
+    '.kkkkkkk.',
+    '.........',
+  ], { k, R: 0xff4a4a, w: 0xffffff });
+  add(scene, 'warn', wn);
+
+  // energy orb
+  const orb = new Px(38, 38);
+  orb.ellipse(19, 19, 17, 17, (dx, dy, g) => {
+    const lit = -dx * 0.55 - dy * 0.75;
+    if (g > 0.86) return 0x0a3a48;
+    if (lit > 0.7 && g < 0.5) return 0x9ef4ff;
+    return lit > 0.15 ? 0x38d6e8 : lit > -0.35 ? 0x1693a8 : 0x0f6478;
+  });
+  orb.outline(k);
+  add(scene, 'orb', orb);
+
+  const sh = new Px(24, 8);
+  sh.ellipse(12, 4, 11.5, 3.5, 0x000000);
+  add(scene, 'shadow', sh);
+}
+
 // ---------------------------------------------------------------- environment
 function drawBackground(): Px {
   const px = new Px(W, H);
@@ -428,30 +515,29 @@ function drawAcid(frame: number): Px {
   return px;
 }
 
-function drawExit(open: number): Px {
-  // open: 0 closed, 1 half, 2 open
-  const px = new Px(CELL, BOARD_H);
+/** Puckered ring (the way out). open: 0 closed, 1 half, 2 open. */
+export function drawRing(px: Px, cx: number, cy: number, R: number, open: number): void {
   const ramp = [0x3a1226, 0x5a1d38, 0x7f2c4b, 0xb04a5c, 0xe08a98];
-  for (let y = 0; y < BOARD_H; y++)
-    for (let x = 0; x < CELL; x++) {
-      const idx = dither(x, y, 0.45) ? 1 : 0;
-      px.set(x, y, ramp[idx]);
-    }
-  const cx = CELL / 2, cy = BOARD_H / 2;
-  // puckered ring with wrinkles
-  px.ellipse(cx, cy, 15, 15, (dx, dy, g) => {
+  px.ellipse(cx, cy, R, R, (dx, dy, g) => {
     const ang = Math.atan2(dy, dx);
     const wr = Math.abs(Math.sin(ang * 6)) > 0.88 && g > 0.15;
     if (g > 0.8) return ramp[2];
     if (wr) return ramp[1];
     return g < 0.4 ? ramp[4] : ramp[3];
   });
-  const holeR = [1.4, 5, 9][open];
-  px.ellipse(cx, cy, holeR, open === 0 ? 4.5 : holeR, (_dx, _dy, g) => {
+  const holeR = [R * 0.1, R * 0.33, R * 0.6][open];
+  px.ellipse(cx, cy, holeR, open === 0 ? R * 0.3 : holeR, (_dx, _dy, g) => {
     if (open === 0) return 0x1a0610;
     return g > 0.6 ? 0xfff0b0 : g > 0.25 ? 0xffffff : 0xfffbe0;
   });
-  if (open === 0) px.rect(cx - 4, cy, 8, 1, 0x1a0610);
+  if (open === 0) px.rect(Math.round(cx - R * 0.27), Math.round(cy), Math.round(R * 0.54), 1, 0x1a0610);
+}
+
+function drawExit(open: number): Px {
+  const px = new Px(CELL, BOARD_H);
+  const ramp = [0x3a1226, 0x5a1d38];
+  for (let y = 0; y < BOARD_H; y++) for (let x = 0; x < CELL; x++) px.set(x, y, ramp[dither(x, y, 0.45) ? 1 : 0]);
+  drawRing(px, CELL / 2, BOARD_H / 2, 15, open);
   return px;
 }
 
@@ -486,6 +572,7 @@ export function generateTextures(scene: Phaser.Scene): void {
   add(scene, 'hero_cheer', drawHero('cheer'));
   add(scene, 'hero_hurt', drawHero('hurt'));
   drawIcons(scene);
+  drawMoreIcons(scene);
 
   add(scene, 'bg', drawBackground());
   const wall = drawWall();

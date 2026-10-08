@@ -59,6 +59,10 @@ export class GutGame implements ToolCtx {
     this.draw();
   }
 
+  get minCol(): number {
+    return COLS - this.level.reach;
+  }
+
   at(r: number, c: number): Cell | null {
     if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
     return this.grid[r][c];
@@ -90,11 +94,18 @@ export class GutGame implements ToolCtx {
 
   /** Cells a tool would affect at (r,c); empty = invalid. */
   area(tool: ToolId, r: number, c: number): Pos[] {
+    if (TOOLS[tool].self || c < this.minCol) return [];
     return TOOLS[tool].area(this, r, c);
+  }
+
+  /** Self-targeted tools: is there anything for them to do right now? */
+  canSelf(tool: ToolId): boolean {
+    return tool === 'antidote' ? this.infection.some((v) => v > 0) : false;
   }
 
   /** Is there any valid target for this tool anywhere on the board? */
   hasTarget(tool: ToolId): boolean {
+    if (TOOLS[tool].self) return this.canSelf(tool);
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++) if (this.area(tool, r, c).length) return true;
     return false;
@@ -108,8 +119,9 @@ export class GutGame implements ToolCtx {
   play(handIndex: number, r: number, c: number): GameEvent[] | null {
     if (!this.canPlay(handIndex)) return null;
     const card = this.hand[handIndex];
+    const self = !!TOOLS[card.tool].self;
     const cells = this.area(card.tool, r, c);
-    if (!cells.length) return null;
+    if (self ? !this.canSelf(card.tool) : !cells.length) return null;
 
     const ev: GameEvent[] = [];
     this.energy -= TOOLS[card.tool].cost;
@@ -118,7 +130,8 @@ export class GutGame implements ToolCtx {
 
     switch (card.tool) {
       case 'pick':
-      case 'zapper': {
+      case 'zapper':
+      case 'broom': {
         const gems: { cell: Cell; p: Pos }[] = [];
         for (const p of cells) {
           const cell = this.grid[p.r][p.c]!;
@@ -129,7 +142,8 @@ export class GutGame implements ToolCtx {
         this.collect(gems, ev);
         break;
       }
-      case 'net': {
+      case 'net':
+      case 'magnet': {
         const gems: { cell: Cell; p: Pos }[] = [];
         for (const p of cells) {
           const cell = this.grid[p.r][p.c];
@@ -139,6 +153,13 @@ export class GutGame implements ToolCtx {
           }
         }
         this.collect(gems, ev);
+        break;
+      }
+      case 'antidote': {
+        let worst = 0;
+        for (let k = 1; k < 4; k++) if (this.infection[k] > this.infection[worst]) worst = k;
+        const level = --this.infection[worst];
+        ev.push({ t: 'heal', colour: worst as Colour, level });
         break;
       }
       case 'shove': {

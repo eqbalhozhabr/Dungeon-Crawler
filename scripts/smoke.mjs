@@ -30,6 +30,8 @@ const errors = [];
 const external = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('request', (r) => { if (!r.url().startsWith(origin) && !r.url().startsWith('data:') && !r.url().startsWith('blob:')) external.push(r.url()); });
+const VIEW = process.env.VIEW ?? 'fp';
+await page.addInitScript((v) => { try { if (!localStorage.getItem('dth_save_v1')) localStorage.setItem('dth_save_v1', JSON.stringify({ view: v })); } catch (e) {} }, VIEW);
 await page.goto(`${origin}/?seed=${seed}`);
 await page.waitForTimeout(800);
 const box0 = await page.evaluate(() => { const r = document.querySelector('canvas').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
@@ -38,7 +40,10 @@ await page.waitForTimeout(1800);
 
 const box = await page.evaluate(() => { const r = document.querySelector('canvas').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
 const px = (gx, gy) => [box.x + (gx * box.w) / 480, box.y + (gy * box.h) / 270];
-const cellPos = (r, c) => px(40 + c * 32 + 16, 38 + r * 32 + 16);
+const gp = async (expr) => { const p = await page.evaluate(expr); return px(p.x, p.y); };
+const cellPos = (r, c) => gp(`window.__gut.scene.screenPos(${r}, ${c})`);
+const cardPos = (i) => gp(`window.__gut.scene.cardPoint(${i})`);
+const btnPos = (name) => gp(`(() => { const b = window.__gut.scene.${name}; return { x: b.x + b.w / 2, y: b.y + b.h / 2 }; })()`);
 
 // choose an action inside the page (simple greedy-ish policy over the real game state)
 const MODE = process.env.MODE ?? 'greedy';
@@ -50,7 +55,8 @@ const chooseAction = () => page.evaluate((MODE) => {
   let best = null;
   g.hand.forEach((card, i) => {
     if (!g.canPlay(i)) return;
-    const cost = { pick: 1, zapper: 1, net: 2, shove: 1 }[card.tool];
+    const cost = { pick: 1, zapper: 1, net: 2, shove: 1, magnet: 2, broom: 2, antidote: 2 }[card.tool];
+    if (card.tool === 'antidote') { if (Math.max(...g.infection) >= 2) best = { v: 99, i, r: 0, c: 0, self: true }; return; }
     for (let r = 0; r < 5; r++) for (let c = 0; c < 8; c++) {
       const area = g.area(card.tool, r, c);
       if (!area.length) continue;
@@ -65,24 +71,28 @@ const chooseAction = () => page.evaluate((MODE) => {
       if (v > 0 && (!best || v > best.v)) best = { v, i, r, c };
     }
   });
+  if (best && !best.self && g.hand[best.i].tool === 'antidote') best.self = true;
   return best ? { type: 'play', ...best } : { type: 'squeeze' };
 }, MODE);
 
 let step = 0, shotsTaken = 0;
 while (step++ < 260) {
   const a = await chooseAction();
+  if (step === 9 && process.env.TOGGLE) { await page.screenshot({ path: `${shots}/before_toggle.png` }); await page.keyboard.press('v'); await page.waitForTimeout(900); await page.screenshot({ path: `${shots}/after_toggle.png` }); }
+  if (step === 6) await page.screenshot({ path: `${shots}/mid.png` });
   if (a.type === 'end') break;
-  if (a.type === 'escape') { await page.mouse.click(...px(438, 247)); await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/escape_anim.png` }); await page.waitForTimeout(3600); break; }
+  if (a.type === 'escape') { await page.mouse.click(...(await btnPos('escapeBtn'))); await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/escape_anim.png` }); await page.waitForTimeout(3800); await page.screenshot({ path: `${shots}/win.png` }); break; }
   if (a.type === 'squeeze') {
-    if (shotsTaken === 1) { await page.mouse.click(...px(358, 247)); await page.waitForTimeout(180); await page.screenshot({ path: `${shots}/squeeze_anim.png` }); shotsTaken++; }
-    else await page.mouse.click(...px(358, 247)); // SQUEEZE button
+    if (shotsTaken === 1) { await page.mouse.click(...(await btnPos('squeezeBtn'))); await page.waitForTimeout(180); await page.screenshot({ path: `${shots}/squeeze_anim.png` }); shotsTaken++; }
+    else await page.mouse.click(...(await btnPos('squeezeBtn'))); // SQUEEZE button
     await page.waitForTimeout(1500);
     continue;
   }
-  const [cx, cy] = px(48 + a.i * 66 + 31, 248);
+  if (a.self) { const [sx, sy] = await cardPos(a.i); await page.mouse.click(sx, sy); await page.waitForTimeout(700); continue; }
+  const [cx, cy] = await cardPos(a.i);
   await page.mouse.click(cx, cy); // real click on the card
-  await page.waitForTimeout(120);
-  const [x, y] = cellPos(a.r, a.c);
+  await page.waitForTimeout(150);
+  const [x, y] = await cellPos(a.r, a.c);
   await page.mouse.move(x, y);
   await page.waitForTimeout(120);
   if (shotsTaken === 0) { await page.screenshot({ path: `${shots}/preview.png` }); shotsTaken++; }
@@ -91,6 +101,16 @@ while (step++ < 260) {
   await page.waitForTimeout(900);
 }
 await page.waitForTimeout(800);
+if (process.env.REWARD && (await page.evaluate(() => window.__gut.scene.g.phase)) === 'escaped') {
+  await page.mouse.click(...px(175, 195)); // CHOOSE REWARD
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: `${shots}/reward.png` });
+  await page.mouse.click(...px(102, 118)); // first card
+  await page.waitForTimeout(2200);
+  const extras = await page.evaluate(() => JSON.parse(localStorage.getItem('dth_save_v1')).extras);
+  console.log('reward saved, extras =', JSON.stringify(extras));
+  await page.screenshot({ path: `${shots}/nextrun.png` });
+}
 const state = await page.evaluate(() => { const g = window.__gut.scene.g; return { phase: g.phase, lost: g.lossReason, score: g.score, turn: g.turn, digest: g.digest, infection: g.infection, result: g.result }; });
 await page.screenshot({ path: `${shots}/end.png` });
 console.log(JSON.stringify(state));

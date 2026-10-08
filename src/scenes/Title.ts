@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { sfx } from '../audio/sfx';
 import { C, GAME_TITLE, H, W } from '../config';
+import { BASE_DECK } from '../logic/levels';
+import { loadSave, writeSave } from '../storage';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 
@@ -9,19 +11,22 @@ export const HELP_LINES = [
   '2. TAP A GEM OR BUG TO USE IT.',
   '3. SQUEEZE MOVES THE BELT ON.',
   '   BUGS REACHING THE ACID INFECT YOU.',
-  '4. SCORE THE QUOTA, THEN ESCAPE',
+  '4. YOU CAN ONLY TOUCH THE NEAREST 5',
+  '   COLUMNS. FAR ITEMS MUST COME CLOSER.',
+  '5. SCORE THE QUOTA, THEN ESCAPE',
   '   BEFORE THE FROG DIGESTS YOU!',
+  'KEY V SWITCHES BETWEEN FIRST-PERSON AND FLAT.',
 ];
 
 export function showHelp(scene: Phaser.Scene, onClose: () => void): Phaser.GameObjects.Container {
   const box = scene.add.container(0, 0).setDepth(200);
   const dim = scene.add.rectangle(0, 0, W, H, 0x000000, 0.78).setOrigin(0).setInteractive();
-  const pw = 440, ph = 190;
+  const pw = 450, ph = 214;
   const px = (W - pw) / 2, py = (H - ph) / 2;
   const panel = scene.add.rectangle(px, py, pw, ph, C.panel).setOrigin(0).setStrokeStyle(2, C.panelEdge);
   const title = new Label(scene, W / 2, py + 10, 'HOW TO PLAY', { scale: 2, align: 'center', color: C.accent });
   box.add([dim, panel, title]);
-  HELP_LINES.forEach((line, i) => box.add(new Label(scene, px + 14, py + 38 + i * 17, line, { color: C.text })));
+  HELP_LINES.forEach((line, i) => box.add(new Label(scene, px + 14, py + 36 + i * 15, line, { color: C.text })));
   const close = new Button(scene, W / 2 - 40, py + ph - 30, 80, 22, 'GOT IT', () => {
     box.destroy();
     onClose();
@@ -58,7 +63,16 @@ export class TitleScene extends Phaser.Scene {
       sfx.setMuted(!sfx.muted);
       snd.setLabel(sfx.muted ? 'SOUND: OFF' : 'SOUND: ON');
     }, { fill: 0x5a3a7a });
-    new Label(this, W / 2, 252, 'PROTOTYPE V0.1', { align: 'center', color: C.textDim, shadow: false });
+    const extras = loadSave().extras;
+    new Label(this, W / 2, 242, `DECK: ${BASE_DECK.length + extras.length} CARDS${extras.length ? ` (+${extras.length} REWARDS)` : ''}`, { align: 'center', color: C.textDim, shadow: false });
+    if (extras.length) {
+      new Button(this, W - 100, 246, 92, 16, 'RESET DECK', () => {
+        loadSave().extras = [];
+        writeSave();
+        this.scene.restart();
+      }, { fill: 0x7a2a45 });
+    }
+    new Label(this, W / 2, 254, 'PROTOTYPE V0.2', { align: 'center', color: C.textDim, shadow: false });
 
     this.input.keyboard?.on('keydown-ENTER', () => this.start());
     this.input.keyboard?.on('keydown-SPACE', () => this.start());

@@ -45,3 +45,26 @@ export const C = {
   bad: 0xff5a5a,
   acid: 0x8cf03e,
 };
+
+// ---------------------------------------------------------------- first-person view
+// One camera, one projection: used by the tunnel texture, the sprites and the mouse picking.
+// World units: 1 = one belt cell. x = sideways (lane - 2), y = up (floor = 0), d = distance ahead.
+export const FP = {
+  cx: 240, // screen x of the vanishing point
+  yh: 65, // screen y of the horizon
+  f: 240, // focal length in pixels
+  camY: 2.08, // camera height above the floor
+  lane: 1.35, // width of one belt lane (world units)
+  wall: 3.9, // half width of the tunnel
+  ceil: 4.2, // ceiling height
+  dEnd: 12.7, // the far end wall (the creature's mouth)
+  handX: 110, // left edge of the (tucked away) hand of cards
+  peek: 21, // how much of a card shows while it is tucked away
+};
+/** Belt column -> distance ahead of the camera (column 7 is nearest, 8 is the acid pool). */
+export const fpDist = (col: number) => 11 - col;
+export const fpLaneX = (row: number) => (row - 2) * FP.lane;
+export function fpProject(x: number, y: number, d: number): { x: number; y: number; ppc: number } {
+  const k = FP.f / d;
+  return { x: FP.cx + x * k, y: FP.yh + (FP.camY - y) * k, ppc: k };
+}

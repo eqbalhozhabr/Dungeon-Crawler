@@ -51,7 +51,7 @@ export function castRay(x: number, y: number) {
   return { d, surf, X: dx * d, Y: FP.camY - dy * d };
 }
 
-export function drawTunnel(pal: number[], boil: number): Px {
+export function drawTunnel(pal: number[], boil: number, belt = true): Px {
   const px = new Px(W, H);
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
@@ -68,7 +68,7 @@ export function drawTunnel(pal: number[], boil: number): Px {
       const dome = 1 - Math.min(1, f1 * 1.45);
       let level = (1.3 + 2.9 * dome) * (0.3 + 0.7 * fog) + (surf === 'ceil' ? -0.7 : 0);
       if (surf === 'floor') {
-        const inBelt = Math.abs(X) <= 2.5 * FP.lane && d >= 2.5 && d <= 11.5;
+        const inBelt = belt && Math.abs(X) <= 2.5 * FP.lane && d >= 2.5 && d <= 11.5;
         if (inBelt) {
           level += 0.9 * fog + 0.3;
           const m = X / FP.lane + 2.5;

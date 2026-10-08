@@ -11,7 +11,10 @@
     "package:crazygames": "node scripts/package-portal.mjs",
     "typecheck": "tsc --noEmit",
     "sim": "tsx scripts/sim.ts",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "dev:salvage": "vite -c vite.salvage.config.ts",
+    "build:salvage": "tsc --noEmit && vite build -c vite.salvage.config.ts && mv dist-salvage/salvage.html dist-salvage/index.html",
+    "sim:salvage": "tsx scripts/salvage-sim.ts"
   },
   "dependencies": {
     "phaser": "3.90.0"

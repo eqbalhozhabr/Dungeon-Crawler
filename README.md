@@ -48,3 +48,18 @@ network calls. Debug hooks (`window.__gut`) exist only in non-portal builds with
 
 Smoke test: `VITE_ENABLE_DEBUG=1 npx vite build && node scripts/smoke.mjs 5`
 (plays a game via real mouse clicks, reports page errors and any external requests).
+
+## Prototype: Gullet Salvage (first-person deckbuilder)
+
+A second game in the same repo: a first-person deckbuilder inside a leviathan's belly. Every card is a found object with a fight face and a tool face.
+Design document: `docs/salvage/DESIGN.md`.
+
+```
+npm run dev:salvage       # dev server (opens salvage.html)
+npm run build:salvage     # production build in dist-salvage/ (add VITE_ENABLE_DEBUG=1 for the test hooks)
+npm run sim:salvage       # balance bots (greedy | lazy | random)
+node scripts/salvage-smoke.mjs 2   # plays 2 whole runs + a boss win with real clicks (needs the debug build)
+node scripts/salvage-shot.mjs shots # screenshots of every scene
+```
+
+Code: `src/salvage/` (`logic/` pure rules, `art/` icons and sprites drawn by code, `scenes/`, `ui.ts` cards and overlays).

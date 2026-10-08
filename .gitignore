@@ -5,3 +5,4 @@ releases
 .DS_Store
 *.log
 shots
+dist-salvage

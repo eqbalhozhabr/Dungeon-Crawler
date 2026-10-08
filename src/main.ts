@@ -3,6 +3,7 @@ import { H, W } from './config';
 import { DEBUG } from './target';
 import { BootScene } from './scenes/Boot';
 import { GameScene } from './scenes/Game';
+import { MapScene } from './scenes/Map';
 import { TitleScene } from './scenes/Title';
 
 const game = new Phaser.Game({
@@ -20,7 +21,7 @@ const game = new Phaser.Game({
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   input: { activePointers: 2 },
-  scene: [BootScene, TitleScene, GameScene],
+  scene: [BootScene, TitleScene, MapScene, GameScene],
 });
 
 // Browser behaviour that must not leak into the game (CrazyGames common fixes).

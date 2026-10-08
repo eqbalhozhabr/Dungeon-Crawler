@@ -1,4 +1,4 @@
-# Intestine Crawler: design notes (prototype v0.2)
+# Intestine Crawler: design notes (prototype v0.4)
 
 ## Pitch
 You are a tiny miner inside a creature. Each level is a different creature. Gems float down its
@@ -20,6 +20,28 @@ text original; CrazyGames also rejects clones and confusable names.)
    3 = *Too sick*.
 5. Reach the **quota** and the exit opens. **Escape** any time for a time bonus (5 pts per
    remaining digestion step), or push your luck for 2 and 3 stars.
+
+## What is new in v0.3 / v0.4
+- **You walk forward.** Ribs on the walls and lines on the floor glide towards the camera at every
+  squeeze (and back at a burp), dust drifts past, the exit door is at the far end of the tunnel, and the
+  acid became the **digestion tide** that rises from the bottom edge as the clock runs out. Rules are
+  unchanged: things "reaching you" is the old "reaching the acid".
+- **Look**: inked, cel-shaded tunnel (thick dark membranes, flat colour bands, light only where the lamp
+  reaches), pixel-dither vignette, drifting dust, animated film grain, two "boil" frames of the tunnel
+  swapped 4 times a second. Each creature has its own colour palette.
+- **Hand of cards**: large cards (banner, cost circle, icon window, tag, 3-line text). Only the top
+  part shows at rest; hover / select raises it. Never in the bottom 20 px (iPhone home-indicator zone).
+- **Journey map** (parchment, a gut from mouth to exit): five creatures, each unlocked by escaping the previous one.
+  - Tiny Frog: no quirk.
+  - Hiccup Toad: every 4th squeeze steps twice. A counter warns you.
+  - Burp Hippo: every 5th squeeze the belt runs backwards (a breather, but gems are lost at the far end).
+  - Sticky Slug: some bugs are slimy for the next squeeze: they stay and jam the belt behind them.
+  - Mouldy Mammoth: gems on the belt can rot into bugs.
+- **Six new cards** (13 tools in total): Lantern (reach +2 this turn), Glue (a bug stays put for one
+  squeeze), Spray (kills every bug of one colour), Forage (free: draw 2), Rush (free: +2 energy, digestion +1),
+  Blast (3x3 area, costs 3). Rewards offer new cards more often than the basic ones.
+- Balance (greedy bot, 1500 seeds, base deck): Frog 93 %, Toad 78 %, Hippo 82 %, Slug 82 %, Mammoth 75 %.
+  Run `npm run sim -- 1500 all` and `npm run sim -- 1000 4 dynamite spray glue` to see reward effects.
 
 ## What is new in v0.2
 - **First-person view** (default; key `V` or the V button switches to the flat view, the run is kept).

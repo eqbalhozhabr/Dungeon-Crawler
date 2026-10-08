@@ -31,12 +31,16 @@ const external = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('request', (r) => { if (!r.url().startsWith(origin) && !r.url().startsWith('data:') && !r.url().startsWith('blob:')) external.push(r.url()); });
 const VIEW = process.env.VIEW ?? 'fp';
-await page.addInitScript((v) => { try { if (!localStorage.getItem('ic_save_v1')) localStorage.setItem('ic_save_v1', JSON.stringify({ view: v })); } catch (e) {} }, VIEW);
-await page.goto(`${origin}/?seed=${seed}`);
+const EXTRAS = (process.env.EXTRAS ?? '').split(',').filter(Boolean);
+await page.addInitScript(([v, ex]) => { try { if (!localStorage.getItem('ic_save_v1')) localStorage.setItem('ic_save_v1', JSON.stringify({ view: v, extras: ex, progress: 4 })); } catch (e) {} }, [VIEW, EXTRAS]);
+const LEVEL = process.env.LEVEL;
+await page.goto(`${origin}/?seed=${seed}${LEVEL !== undefined ? '&level=' + LEVEL : ''}`);
 await page.waitForTimeout(800);
 const box0 = await page.evaluate(() => { const r = document.querySelector('canvas').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
-await page.mouse.click(box0.x + (240 * box0.w) / 480, box0.y + (205 * box0.h) / 270); // click PLAY
-await page.waitForTimeout(1800);
+await page.mouse.click(box0.x + (240 * box0.w) / 480, box0.y + (197 * box0.h) / 270); // click PLAY
+await page.waitForTimeout(1000);
+if (LEVEL === undefined) { await page.mouse.click(box0.x + (418 * box0.w) / 480, box0.y + (249 * box0.h) / 270); await page.waitForTimeout(500); } // GO on the map
+await page.waitForTimeout(2200);
 
 const box = await page.evaluate(() => { const r = document.querySelector('canvas').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
 const px = (gx, gy) => [box.x + (gx * box.w) / 480, box.y + (gy * box.h) / 270];
@@ -47,7 +51,8 @@ const btnPos = (name) => gp(`(() => { const b = window.__gut.scene.${name}; retu
 
 // choose an action inside the page (simple greedy-ish policy over the real game state)
 const MODE = process.env.MODE ?? 'greedy';
-const chooseAction = () => page.evaluate((MODE) => {
+const EXTRAS_TEST = EXTRAS.length > 0;
+const chooseAction = () => page.evaluate(([MODE, EXTRAS_TEST]) => {
   const s = window.__gut.scene, g = s.g;
   if (g.phase !== 'play') return { type: 'end' };
   if (MODE === 'idle') return { type: 'squeeze' };
@@ -55,8 +60,10 @@ const chooseAction = () => page.evaluate((MODE) => {
   let best = null;
   g.hand.forEach((card, i) => {
     if (!g.canPlay(i)) return;
-    const cost = { pick: 1, zapper: 1, net: 2, shove: 1, magnet: 2, broom: 2, antidote: 2 }[card.tool];
+    const cost = { pick: 1, zapper: 1, net: 2, shove: 1, magnet: 2, broom: 2, antidote: 2, glue: 1, spray: 2, dynamite: 3, lantern: 1, forage: 0, adrenaline: 0 }[card.tool];
     if (card.tool === 'antidote') { if (Math.max(...g.infection) >= 2) best = { v: 99, i, r: 0, c: 0, self: true }; return; }
+    if (card.tool === 'forage') { if (!best || best.v < 0.5) best = { v: 0.5, i, r: 0, c: 0, self: true }; return; }
+    if (card.tool === 'lantern' || card.tool === 'adrenaline') { if (EXTRAS_TEST && (!best || best.v < 0.4)) best = { v: 0.4, i, r: 0, c: 0, self: true }; return; }
     for (let r = 0; r < 5; r++) for (let c = 0; c < 8; c++) {
       const area = g.area(card.tool, r, c);
       if (!area.length) continue;
@@ -73,7 +80,7 @@ const chooseAction = () => page.evaluate((MODE) => {
   });
   if (best && !best.self && g.hand[best.i].tool === 'antidote') best.self = true;
   return best ? { type: 'play', ...best } : { type: 'squeeze' };
-}, MODE);
+}, [MODE, EXTRAS_TEST]);
 
 let step = 0, shotsTaken = 0;
 while (step++ < 260) {

@@ -4,18 +4,18 @@ import { C, GAME_TITLE, H, W } from '../config';
 import { BASE_DECK } from '../logic/levels';
 import { loadSave, writeSave } from '../storage';
 import { Button } from '../ui/button';
+import { DEBUG } from '../target';
 import { Label } from '../ui/label';
 
 export const HELP_LINES = [
   '1. PICK A TOOL. TOOLS COST ENERGY.',
   '2. TAP A GEM OR BUG TO USE IT.',
-  '3. SQUEEZE MOVES THE BELT ON.',
-  '   BUGS REACHING THE ACID INFECT YOU.',
-  '4. YOU CAN ONLY TOUCH THE NEAREST 5',
-  '   COLUMNS. FAR ITEMS MUST COME CLOSER.',
-  '5. SCORE THE QUOTA, THEN ESCAPE',
-  '   BEFORE THE FROG DIGESTS YOU!',
-  'KEY V SWITCHES BETWEEN FIRST-PERSON AND FLAT.',
+  '3. SQUEEZE: THE GUT PULLS YOU ONE STEP ON.',
+  '   BUGS YOU REACH INFECT YOU. GEMS YOU MISS ARE LOST.',
+  '4. ONLY THE NEAREST 5 COLUMNS CAN BE TOUCHED.',
+  '5. SCORE THE QUOTA, THEN ESCAPE BEFORE YOU ARE',
+  '   DIGESTED. EVERY CREATURE BENDS THE RULES.',
+  'KEY V SWITCHES FIRST-PERSON / FLAT VIEW.',
 ];
 
 export function showHelp(scene: Phaser.Scene, onClose: () => void): Phaser.GameObjects.Container {
@@ -81,8 +81,14 @@ export class TitleScene extends Phaser.Scene {
   private start(): void {
     sfx.unlock();
     sfx.startDrone();
-    const q = new URLSearchParams(window.location.search).get('seed');
-    const seed = q ? Number(q) || 1 : Math.floor(Math.random() * 1e9);
-    this.scene.start('Game', { seed });
+    if (DEBUG) {
+      // tests can jump straight into a creature: ?level=3&seed=7
+      const q = new URLSearchParams(window.location.search);
+      if (q.has('level')) {
+        this.scene.start('Game', { level: Number(q.get('level')) || 0, seed: Number(q.get('seed')) || 1 });
+        return;
+      }
+    }
+    this.scene.start('Map', {});
   }
 }

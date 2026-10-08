@@ -372,22 +372,27 @@ function drawMoreIcons(scene: Phaser.Scene): void {
   ], { k, w: 0xe8dcc0, g: 0x2fc06a, G: 0xb0ffd0 });
   add(scene, 'ico_antidote', an);
 
-  // danger marker
-  const wn = new Px(9, 12);
+  // danger marker: black blob with a red "!" (like the intent bubbles of the reference)
+  const wn = new Px(13, 14);
+  wn.ellipse(6.5, 6.5, 6.4, 6.4, 0x14070f);
   wn.ascii(0, 0, [
-    '....k....',
-    '...kRk...',
-    '..kRRRk..',
-    '..kRwRk..',
-    '.kRRwRRk.',
-    '.kRRwRRk.',
-    'kRRRwRRRk',
-    'kRRRRRRRk',
-    'kRRRwRRRk',
-    'kRRRRRRRk',
-    '.kkkkkkk.',
-    '.........',
-  ], { k, R: 0xff4a4a, w: 0xffffff });
+    '.............',
+    '.............',
+    '.............',
+    '.............',
+    '.............',
+    '.............',
+    '.............',
+    '.............',
+    '.............',
+    '.............',
+    '.............',
+    '.....kkk.....',
+    '......k......',
+    '.............',
+  ], { k: 0x14070f });
+  wn.rect(5, 3, 3, 5, 0xff4a4a);
+  wn.rect(5, 9, 3, 2, 0xff4a4a);
   add(scene, 'warn', wn);
 
   // energy orb
@@ -400,6 +405,134 @@ function drawMoreIcons(scene: Phaser.Scene): void {
   });
   orb.outline(k);
   add(scene, 'orb', orb);
+
+  // lantern
+  const ln = new Px(13, 13);
+  ln.ascii(0, 0, [
+    '....kkkk.....',
+    '...kSSSSk....',
+    '...kS..Sk....',
+    '..kkkkkkkk...',
+    '..kYyyyyYk...',
+    '..kyWWWWyk...',
+    '..kyWWWWyk...',
+    '..kYyWWyYk...',
+    '..kkkkkkkk...',
+    '...kSSSSk....',
+    '....kkkk.....',
+    '.............',
+    '.............',
+  ], { k, S: 0x9aa7b8, Y: 0xffe070, y: 0xf0b92a, W: 0xffffff });
+  add(scene, 'ico_lantern', ln);
+
+  // glue tube
+  const gl = new Px(13, 13);
+  gl.ascii(0, 0, [
+    '.....kkk.....',
+    '....kBBBk....',
+    '....kBBBk....',
+    '...kkkkkkk...',
+    '..kWWWWWWWk..',
+    '..kWdddddWk..',
+    '..kWWWWWWWk..',
+    '..kWWWWWWWk..',
+    '...kkkkkkk...',
+    '.....kGk.....',
+    '.....kGk.....',
+    '....kGGGk....',
+    '.....kkk.....',
+  ], { k, B: 0x3f86ff, W: 0xf4efe0, d: 0xc8c0a8, G: 0xbff0ff });
+  add(scene, 'ico_glue', gl);
+
+  // spray can
+  const sp = new Px(13, 13);
+  sp.ascii(0, 0, [
+    '.....kkk.....',
+    '....kRRRk....',
+    '....kkkkk....',
+    '...kSSSSSk...',
+    '...kSwwwSk...',
+    '...kSSSSSk...',
+    '...kLLLLLk...',
+    '...kLGGGLk...',
+    '...kLGGGLk...',
+    '...kLLLLLk...',
+    '...kLLLLLk...',
+    '...kkkkkkk...',
+    '.............',
+  ], { k, R: 0xd8344a, S: 0xc9d6e6, w: 0x7f93ab, L: 0x2fc06a, G: 0xb0ffd0 });
+  add(scene, 'ico_spray', sp);
+
+  // forage = a little mushroom
+  const fo = new Px(13, 13);
+  fo.ascii(0, 0, [
+    '....kkkkk....',
+    '..kkRRRRRkk..',
+    '.kRRwRRRwRRk.',
+    'kRRwwRRRRRRRk',
+    'kRRRRRRwwRRRk',
+    '.kkkkkkkkkkk.',
+    '....kWWWk....',
+    '....kWWWk....',
+    '....kWWWk....',
+    '.....kkk.....',
+    '.............',
+    '.............',
+    '.............',
+  ], { k, R: 0xd8344a, w: 0xffffff, W: 0xe8dcc0 });
+  add(scene, 'ico_forage', fo);
+
+  // rush = heart
+  const ad = new Px(13, 13);
+  ad.ascii(0, 0, [
+    '..kkk...kkk..',
+    '.kRRRk.kRRRk.',
+    'kRRwRRkRRRRRk',
+    'kRRRRRRRRRRRk',
+    '.kRRRRRRRRRk.',
+    '..kRRRRRRRk..',
+    '...kRRRRRk...',
+    '....kRRRk....',
+    '.....kRk.....',
+    '......k......',
+    '.............',
+    '.............',
+    '.............',
+  ], { k, R: 0xff4a5a, w: 0xffc2c9 });
+  add(scene, 'ico_adrenaline', ad);
+
+  // dynamite
+  const dy = new Px(13, 13);
+  dy.ascii(0, 0, [
+    '.........y...',
+    '........yOy..',
+    '.......k.y...',
+    '......k......',
+    '..kkkkkkkkk..',
+    '.kRRRRRRRRRk.',
+    '.kRrrrrrrrRk.',
+    '.kRWWWWWWWRk.',
+    '.kRrrrrrrrRk.',
+    '.kRRRRRRRRRk.',
+    '..kkkkkkkkk..',
+    '.............',
+    '.............',
+  ], { k, R: 0xd8344a, r: 0x8f1f33, W: 0xf4efe0, y: 0xffe070, O: 0xff9a2e });
+  add(scene, 'ico_dynamite', dy);
+
+  // slime marker (this bug is sticky)
+  const sl = new Px(14, 8);
+  sl.ascii(0, 0, [
+    '..kkkkkk..kk..',
+    '.kGGGGGGkkGGk.',
+    'kGGwGGGGGGGGGk',
+    'kGGGGGGGGGGGGk',
+    '.kGGGkkGGGGGk.',
+    '..kkkk.kGGk...',
+    '........kGk...',
+    '.........k....',
+  ], { k, G: 0x9cf03e, w: 0xe8ffb0 });
+  add(scene, 'slime', sl);
 
   const sh = new Px(24, 8);
   sh.ellipse(12, 4, 11.5, 3.5, 0x000000);
@@ -560,6 +693,40 @@ function drawCard(kind: 'normal' | 'selected' | 'dim'): Px {
   return px;
 }
 
+export const BIG_W = 66;
+export const BIG_H = 94;
+
+/** Large hand card in the spirit of the reference: banner, cost circle, icon panel, tag, text box. */
+function drawBigCard(kind: 'normal' | 'selected' | 'dim'): Px {
+  const px = new Px(BIG_W, BIG_H);
+  const edge = kind === 'selected' ? 0xffd35a : INK;
+  const paper = kind === 'dim' ? 0x7b8576 : 0xb4c2a8;
+  const paper2 = kind === 'dim' ? 0x6d7769 : 0xa2b296;
+  const banner = kind === 'dim' ? 0x3d463c : 0x4e5e4c;
+  const panel = kind === 'dim' ? 0x98a28f : 0xd9e2cf;
+  const text = kind === 'dim' ? 0xb4bdab : 0xe6ecdc;
+  for (let y = 0; y < BIG_H; y++)
+    for (let x = 0; x < BIG_W; x++) {
+      const corner = (x < 2 || x >= BIG_W - 2) && (y < 2 || y >= BIG_H - 2);
+      if (corner) continue;
+      const border = x < 2 || y < 2 || x >= BIG_W - 2 || y >= BIG_H - 2;
+      px.set(x, y, border ? edge : dither(x, y, y / BIG_H * 0.8) ? paper2 : paper);
+    }
+  if (kind === 'selected') for (let x = 2; x < BIG_W - 2; x++) px.set(x, 2, 0xfff0b0);
+  px.rect(3, 3, BIG_W - 6, 11, banner);
+  px.rect(6, 17, BIG_W - 12, 32, panel);
+  for (let x = 6; x < BIG_W - 6; x++) { px.set(x, 17, INK); px.set(x, 48, INK); }
+  for (let y = 17; y < 49; y++) { px.set(6, y, INK); px.set(BIG_W - 7, y, INK); }
+  px.rect(10, 52, BIG_W - 20, 8, banner);
+  px.rect(4, 62, BIG_W - 8, BIG_H - 68, text);
+  for (let x = 4; x < BIG_W - 4; x++) { px.set(x, 62, INK); px.set(x, BIG_H - 7, INK); }
+  for (let y = 62; y < BIG_H - 6; y++) { px.set(4, y, INK); px.set(BIG_W - 5, y, INK); }
+  // cost circle (top-left, overlapping the banner)
+  px.ellipse(11, 10, 8.2, 8.2, kind === 'dim' ? 0x20281f : INK);
+  px.ellipse(11, 10, 6.6, 6.6, kind === 'dim' ? 0x4a5646 : 0xf4efe0);
+  return px;
+}
+
 // ---------------------------------------------------------------- public
 export function generateTextures(scene: Phaser.Scene): void {
   for (let c = 0; c < 4; c++) {
@@ -585,6 +752,9 @@ export function generateTextures(scene: Phaser.Scene): void {
   add(scene, 'card', drawCard('normal'));
   add(scene, 'card_sel', drawCard('selected'));
   add(scene, 'card_dim', drawCard('dim'));
+  add(scene, 'card_big', drawBigCard('normal'));
+  add(scene, 'card_big_sel', drawBigCard('selected'));
+  add(scene, 'card_big_dim', drawBigCard('dim'));
 
   // 1x1 white pixel for particles / bars
   const one = new Px(1, 1);

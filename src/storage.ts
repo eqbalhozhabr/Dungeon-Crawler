@@ -13,10 +13,12 @@ export interface Save {
   view: ViewMode;
   /** Reward cards earned so far; they are added to the starting deck of every new run. */
   extras: ToolId[];
+  /** Index of the furthest creature you may enter (0 = only the first). */
+  progress: number;
   best: Record<string, { score: number; stars: number }>;
 }
 
-const DEFAULT: Save = { muted: false, seenHelp: false, view: 'fp', extras: [], best: {} };
+const DEFAULT: Save = { muted: false, seenHelp: false, view: 'fp', extras: [], progress: 0, best: {} };
 
 let cache: Save | null = null;
 

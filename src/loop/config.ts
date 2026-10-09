@@ -35,9 +35,9 @@ export const DISTRICT_COL = [0x4ab8b0, 0xe05a5a, 0xf0c050];
 /** Floor tint of a lane by the rune that builds it: readable at a glance. */
 export const FLOOR: Record<string, number> = {
   coin: 0xd8c264,
-  bandit: 0xb8a070,
-  brute: 0xa8806a,
-  spikes: 0xb87a6a,
-  fountain: 0x8cb0a0,
+  bandit: 0xa89cc0,
+  brute: 0xc07a68,
+  spikes: 0x9c6a7c,
+  fountain: 0x78b4aa,
   hole: 0x8a7c5a,
 };

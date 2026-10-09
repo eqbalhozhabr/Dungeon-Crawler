@@ -1,5 +1,6 @@
 // Inlines the production build (dist/) into ONE html fragment, handy for sharing a playable copy
-// (e.g. as a Claude artifact). Usage: npx vite build && node scripts/make-single-file.mjs <out.html> [distDir] [title]
+// (e.g. as a Claude artifact). Usage: npx vite build && node scripts/make-single-file.mjs <out.html> [distDir] [title] [template.html]
+//   Alley Echo: npm run build:loop && node scripts/make-single-file.mjs out.html dist-loop "Alley Echo" scripts/loop-single.tpl.html
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -11,7 +12,10 @@ const m = html.match(/<script type="module"[^>]*src="\.\/(assets\/[^"]+)"[^>]*><
 if (!m) throw new Error('bundle script tag not found in dist/index.html');
 const js = fs.readFileSync(path.join(dist, m[1]), 'utf8').replace(/<\/script/gi, '<\\/script');
 
-const page = `<title>${title}</title>
+const tpl = process.argv[5];
+const page = tpl
+  ? fs.readFileSync(tpl, 'utf8').replace('%TITLE%', title).replace('%JS%', () => js)
+  : `<title>${title}</title>
 <style>
   :root { --bg: #1a0a14; --fg: #f4e3d7; color-scheme: dark; }
   html, body { height: 100%; margin: 0; padding: 0; background: var(--bg); color: var(--fg); overflow: hidden;

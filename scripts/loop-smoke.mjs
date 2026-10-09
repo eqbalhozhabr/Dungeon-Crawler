@@ -39,15 +39,16 @@ s.mode === 'play' ? good('PLAY button starts a run') : bad('PLAY did not start: 
 
 await page.keyboard.press('ArrowLeft');
 s = await state(); s.lane === 0 ? good('ArrowLeft steers left') : bad('lane after ArrowLeft ' + s.lane);
-await page.keyboard.press('d'); await page.waitForTimeout(100); await page.keyboard.press('d');
-s = await state(); s.lane === 2 ? good('D steers right') : bad('lane after DD ' + s.lane);
-await page.waitForTimeout(100);
+// one lane takes 0.2 s to cross; taps made meanwhile are buffered
+await page.keyboard.press('d'); await page.keyboard.press('d'); await page.waitForTimeout(500);
+s = await state(); s.lane === 2 ? good('D D steers right two lanes (buffered)') : bad('lane after DD ' + s.lane);
 await click(30, 120); // tap the street, left third
+await page.waitForTimeout(500);
 s = await state(); s.lane === 0 ? good('tapping the street picks the lane') : bad('lane after tap ' + s.lane);
-await page.waitForTimeout(100);
 // drag across the street
 const a = await L(20, 120), b = await L(160, 120);
 await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(b.x, b.y, { steps: 5 }); await page.mouse.up();
+await page.waitForTimeout(500);
 s = await state(); s.lane === 2 ? good('dragging steers') : bad('lane after drag ' + s.lane);
 
 // slide a free tile with a click on the grid
@@ -62,7 +63,7 @@ else {
 }
 
 // a long bot-driven run: laps, ghosts, tremors, no errors
-await page.evaluate(() => { window.__loop.game.hp = 3; window.__loop.bot(true); });
+await page.evaluate(() => { window.__loop.game.hp = 50; window.__loop.bot(true); });
 await page.waitForTimeout(100);
 await page.evaluate(() => window.__loop.skip(70));
 s = await state();
@@ -95,6 +96,31 @@ s = await state();
 s.mode === 'play' && !s.over && s.lap === 0 ? good('AGAIN starts a fresh run') : bad('again: ' + JSON.stringify(s));
 const saved = await page.evaluate(() => localStorage.getItem('ae_save_v1'));
 saved && JSON.parse(saved).runs >= 2 ? good('progress saved: ' + saved) : bad('no save: ' + saved);
+
+// the same on a phone: taps only
+{
+  const ctx2 = await browser.newContext({ viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true, deviceScaleFactor: 3 });
+  const m = await ctx2.newPage();
+  m.on('pageerror', (e) => bad('phone page error: ' + e.message));
+  await m.goto(`${origin}/?seed=21`);
+  await m.waitForTimeout(500);
+  const T = (x, y) => m.evaluate(([x, y]) => { const r = document.querySelector('canvas').getBoundingClientRect(); return { x: r.left + (x / 180) * r.width, y: r.top + (y / 320) * r.height }; }, [x, y]);
+  const tap = async (x, y) => { const p = await T(x, y); await m.touchscreen.tap(p.x, p.y); };
+  const st = () => m.evaluate(() => ({ mode: window.__loop.mode, lane: window.__loop.game.lane, slides: window.__loop.game.slides }));
+  await tap(90, 160);
+  (await st()).mode === 'play' ? good('phone: tap PLAY') : bad('phone: PLAY did not start');
+  await tap(150, 120);
+  await m.waitForTimeout(300);
+  (await st()).lane === 2 ? good('phone: tapping the right of the street steers right') : bad('phone: lane ' + (await st()).lane);
+  await tap(30, 120);
+  await m.waitForTimeout(500);
+  (await st()).lane === 0 ? good('phone: tapping the left steers left') : bad('phone: lane ' + (await st()).lane);
+  await m.evaluate(() => { window.__loop.game.p = 5; });
+  const c2 = await m.evaluate(() => { const g = window.__loop.game; for (let d = 0; d < 3; d++) for (let l = 0; l < 3; l++) if (g.grid[d][l] && g.slideCells(d, l)) return { d, l }; return null; });
+  await tap(9 + c2.l * 54 + 27, 218 + (2 - c2.d) * 29 + 14);
+  (await st()).slides === 1 ? good('phone: tapping a tile slides it') : bad('phone: slides ' + (await st()).slides);
+  await ctx2.close();
+}
 
 await browser.close();
 server.close();

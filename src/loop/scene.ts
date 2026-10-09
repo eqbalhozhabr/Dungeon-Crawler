@@ -344,7 +344,7 @@ export class Scene {
             });
             return;
           }
-          if (tile.state[i] <= 0 || d < DMIN || d > DMAX) return;
+          if (tile.state[i] <= 0 || d < -0.35 || d > DMAX) return;
           const f = fogT(d);
           const q0 = proj(d, X, 0, ox);
           if (it.kind === 'coin') {
@@ -407,11 +407,11 @@ export class Scene {
         d: 0.001 - 0.001 * i,
         fn: () => {
           const q = proj(0, (v - 1) * LW, 0, ox);
-          const off = (i - 1) * 3;
+          const off = (i - 1) * 6;
           const h = q.s * 0.78;
           const bob = Math.round(Math.sin(this.t * 7 + i * 2));
-          b.ell(q.x + off, q.y, h * 0.3, h * 0.08, C.ghost, 0.18);
-          b.sprite(frame ? SPR.runnerB : SPR.runnerA, q.x + off, q.y + bob - 1, h, { tint: C.ghost, tintAmount: 0.82, alpha: 0.55 + 0.1 * Math.sin(this.t * 6 + i) });
+          b.ell(q.x + off, q.y + 2, h * 0.3, h * 0.08, C.ghost, 0.18);
+          b.sprite(frame ? SPR.runnerB : SPR.runnerA, q.x + off, q.y + bob + 2, h, { tint: C.ghost, tintAmount: 0.82, alpha: 0.55 + 0.1 * Math.sin(this.t * 6 + i) });
         },
       });
     });

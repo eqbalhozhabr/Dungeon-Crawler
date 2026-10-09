@@ -63,3 +63,18 @@ node scripts/salvage-shot.mjs shots # screenshots of every scene
 ```
 
 Code: `src/salvage/` (`logic/` pure rules, `art/` icons and sprites drawn by code, `scenes/`, `ui.ts` cards and overlays).
+
+## Prototype: Alley Echo (ghost runner on a ring)
+
+A third game in the same repo: an endless runner on a ring-shaped alley. Every lap you run becomes a ghost that repeats it next lap, and a 3x3 rune grid under the street is the alley's map: slide the runes to rebuild the street live. Portrait, touch/mouse/keyboard. The music is built from what happens in the game.
+Design document: `docs/loop/DESIGN.md`.
+
+```
+npm run dev:loop          # dev server (opens loop.html)
+npm run build:loop        # production build in dist-loop/ (add VITE_ENABLE_DEBUG=1 for the test hooks)
+npm run test:loop         # rule checks of the engine
+npm run sim:loop -- 300 dodger 2.5   # balance bots (dodger | planner | sloppy | lazy), runs, look-ahead rows
+node scripts/loop-smoke.mjs          # plays with real mouse/touch/keyboard events (needs the debug build)
+```
+
+Code: `src/loop/` (`logic/` pure rules, `scene.ts` street, `panel.ts` grid and HUD, `audio.ts` synth).

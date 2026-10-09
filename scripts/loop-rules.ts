@@ -160,6 +160,26 @@ const lapOf = (g: Game, laps: number) => {
   ok(!g.isLocked(1), 'the next district is free to edit earlier');
 }
 {
+  // alert: foes left alive raise it, a clean sweep lowers it, 7 brings the guards
+  const r = E();
+  r[0][0] = 'bandit';
+  r[1][2] = 'brute';
+  const g = alley(r);
+  g.setLane(1);
+  run(g, 10.2);
+  ok(g.heat === 1, `a surviving foe tile raises the alert by one (heat ${g.heat})`);
+  const h = alley(r);
+  h.setLane(0);
+  run(h, 10.2);
+  ok(h.heat === 0 && h.kills === 2, 'clearing the district keeps the alert at zero');
+  const gg = alley(r);
+  gg.heat = 6;
+  gg.setLane(1);
+  run(gg, 10.2);
+  ok(gg.heat === 3 && gg.hp === 2, `at 7 the guards arrive: a heart is lost and the alert drops to 3 (heat ${gg.heat}, hp ${gg.hp})`);
+  ok(gg.uncovered(0, 0) && !gg.uncovered(0, 1), 'a foe tile with no ghost in its lane is flagged uncovered');
+}
+{
   // the alley gets worse and shakes every third lap
   const r = E();
   r[1][0] = 'coin';

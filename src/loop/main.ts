@@ -131,6 +131,14 @@ function handleEvents(g: Game, quiet: boolean): void {
         scene.popup(g.p, e.lane, '-1', C.red);
         if (!quiet) sound.hurt();
         break;
+      case 'heat':
+        if (!quiet && e.survivors > 0) sound.click();
+        break;
+      case 'guards':
+        panel.banner('THE GUARDS ARRIVE', 'FULL ALERT COSTS A HEART', 2.2);
+        scene.shake = 0.8;
+        if (!quiet) sound.tremor();
+        break;
       case 'heal':
         scene.popup(g.p, e.lane, 'HEAL', C.good);
         if (!quiet) sound.heal();
@@ -150,7 +158,8 @@ function handleEvents(g: Game, quiet: boolean): void {
         if (!quiet) sound.tremor();
         break;
       case 'over':
-        if (!quiet) sound.over();
+        if (demo) break; // the title screen's bot died: the frame loop restarts it
+        sound.over();
         endRun();
         break;
     }
@@ -183,9 +192,10 @@ function hints(g: Game): void {
     return true;
   };
   if (g.time > 0.4 && say('steer', 'TAP OR DRAG THE STREET\nTO CHANGE LANE\nYOU HIT WHAT IS IN YOUR LANE')) return;
-  if (g.lap === 0 && g.p > 12 && say('coins', 'GRAB COINS, DODGE SPIKES\nTHIEVES DIE TO ONE HIT')) return;
-  if (g.lap === 1 && g.p > 1 && say('ghost', 'A GHOST REPEATS YOUR LAP\nITS ROUTE: BLUE ON THE MAP', 5.5)) return;
-  if (g.lap === 1 && g.p > 10 && say('slide', 'TAP GLOWING RUNES TO SLIDE\nTHEM INTO THE GAP\nREBUILD THE ALLEY AHEAD', 6)) return;
+  if ((g.p > 12 || g.lap > 0) && say('coins', 'GRAB COINS, DODGE SPIKES\nTHIEVES DIE TO ONE HIT')) return;
+  if (g.heat > 0 && say('alert', 'FOES LEFT ALIVE RAISE ALERT\nFULL ALERT COSTS A HEART\nSWEEP FOES TO CALM IT', 5.5)) return;
+  if (g.lap >= 1 && g.p > 1 && say('ghost', 'A GHOST REPEATS YOUR LAP\nITS ROUTE: BLUE ON THE MAP', 5.5)) return;
+  if ((g.lap >= 2 || (g.lap === 1 && g.p > 10)) && say('slide', 'TAP GLOWING RUNES TO SLIDE\nTHEM INTO THE GAP\nPUT FOES IN A GHOST LANE (!)', 6)) return;
   if (!save.hints.includes('steer')) return;
   for (let l = 0; l < LANES; l++)
     for (let d = 0; d < 3; d++) {
@@ -429,5 +439,15 @@ if (DEBUG) {
       }
     },
     save,
+    /** Average milliseconds to draw one frame (street + panel + canvas upload). */
+    bench: (n: number) => {
+      const t0 = performance.now();
+      for (let i = 0; i < n; i++) {
+        scene.draw(game, 1 / 60);
+        panel.draw(buf, game, 1 / 60, null, false);
+        buf.toCanvas(ctx);
+      }
+      return (performance.now() - t0) / n;
+    },
   };
 }

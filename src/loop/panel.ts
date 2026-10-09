@@ -1,10 +1,10 @@
 // Everything below the street and on top of it: the rune grid (the ring's map), the HUD, banners and hints.
 import { PixBuf, mixc } from './art/buf';
 import { SPR } from './art/sprites';
-import { C, DISTRICT_COL, GRID, H, SCENE_H, tileRect, W } from './config';
+import { C, DISTRICT_COL, FLOOR, GRID, H, SCENE_H, tileRect, W } from './config';
 import type { Game } from './logic/game';
 import { RUNE_HELP, RUNE_NAMES } from './logic/runes';
-import { BINS, DISTRICTS, DROWS, LANES, MAX_ECHOES, MAX_HP, RING, type RuneId } from './logic/types';
+import { BINS, DISTRICTS, DROWS, HEAT_MAX, LANES, MAX_ECHOES, MAX_HP, RING, type RuneId } from './logic/types';
 
 export const PAUSE_RECT = { x: 161, y: 1, w: 17, h: 12 };
 
@@ -68,6 +68,8 @@ export class Panel {
   private hintDur = 0;
   private tipText = '';
   private tipAge = 99;
+  private heatSeen = 0;
+  private heatFlash = 0;
   t = 0;
 
   banner(text: string, sub = '', dur = 1.8): void {
@@ -94,6 +96,8 @@ export class Panel {
     this.banners = [];
     this.hintAge = 99;
     this.tipAge = 99;
+    this.heatSeen = 0;
+    this.heatFlash = 0;
   }
 
   // ---------------------------------------------------------------- grid
@@ -152,7 +156,7 @@ export class Panel {
         if (Math.abs(r.x - p.x) < 0.6) p.x = r.x;
         if (Math.abs(r.y - p.y) < 0.6) p.y = r.y;
         const isHover = hover?.d === d && hover.l === l;
-        this.tile(b, Math.round(p.x), Math.round(p.y), t.rune, g.isLocked(d), movable.has(t.id), isHover, d);
+        this.tile(b, Math.round(p.x), Math.round(p.y), t.rune, g.isLocked(d), movable.has(t.id), isHover, d, g.echoes.length > 0 && g.uncovered(d, l));
       }
 
     this.paths(b, g);
@@ -163,9 +167,9 @@ export class Panel {
       const lines = this.hintText.split('\n');
       const h = lines.length * 9 + 6;
       const a = Math.min(1, (this.hintDur - this.hintAge) * 3, this.hintAge * 5);
-      b.rect(6, 17, W - 12, h, C.ink, 0.72 * a);
-      b.frame(6, 17, W - 12, h, C.panelEdge, a);
-      lines.forEach((ln, i) => b.textC(ln, W / 2, 21 + i * 9, C.text, 1));
+      b.rect(6, 28, W - 12, h, C.ink, 0.78 * a);
+      b.frame(6, 28, W - 12, h, C.panelEdge, a);
+      lines.forEach((ln, i) => b.textC(ln, W / 2, 32 + i * 9, C.text, 1));
     }
   }
 
@@ -182,7 +186,7 @@ export class Panel {
     b.line(cx, cy - 4, cx, cy + 4, 0xffd880, 0.6 + 0.4 * glow);
   }
 
-  private tile(b: PixBuf, x: number, y: number, rune: RuneId, locked: boolean, movable: boolean, hover: boolean, d: number): void {
+  private tile(b: PixBuf, x: number, y: number, rune: RuneId, locked: boolean, movable: boolean, hover: boolean, d: number, uncovered: boolean): void {
     const w = GRID.tw;
     const h = GRID.th;
     const base = (x / w + d) % 2 < 1 ? C.tileA : C.tileB;
@@ -200,6 +204,15 @@ export class Panel {
       const a = 0.35 + 0.35 * Math.sin(this.t * 7);
       b.frame(x + 1, y + 1, w - 2, h - 2, 0xfff0b0, a);
       b.frame(x + 2, y + 2, w - 4, h - 4, 0xfff0b0, a * 0.5);
+    }
+    // a swatch of the floor colour this rune gives its lane in the street
+    b.rect(x + w - 11, y + h - 8, 8, 5, 0x2a1530);
+    b.rect(x + w - 10, y + h - 7, 6, 3, FLOOR[rune]);
+    if (uncovered) {
+      // a foe no ghost will meet: it will probably survive and raise the alert
+      const a = 0.65 + 0.35 * Math.sin(this.t * 6);
+      b.rect(x + 3, y + 3, 7, 10, C.red, a);
+      b.text('!', x + 4, y + 5, 0xffffff);
     }
     if (hover) b.frame(x, y, w, h, C.text);
   }
@@ -252,6 +265,22 @@ export class Panel {
     b.disc(120, 6, 3, C.gold);
     b.disc(120, 6, 1.5, C.goldDark);
     b.text(s, 126, 2, C.gold, 1, C.ink);
+    // alert: foes left alive fill it, full alert costs a heart
+    if (g.heat !== this.heatSeen) {
+      if (g.heat > this.heatSeen) this.heatFlash = 0.6;
+      this.heatSeen = g.heat;
+    }
+    this.heatFlash = Math.max(0, this.heatFlash - 1 / 60);
+    b.rect(0, 14, W, 9, C.ink, 0.45);
+    b.text('ALERT', 3, 15, g.heat >= HEAT_MAX - 2 && Math.floor(this.t * 5) % 2 === 0 ? C.red : C.textDim);
+    for (let i = 0; i < HEAT_MAX; i++) {
+      const on = i < g.heat;
+      const col = i >= HEAT_MAX - 2 ? C.red : i >= 3 ? 0xf09a3a : 0xf0d060;
+      const x = 38 + i * 12;
+      b.rect(x, 16, 10, 5, 0x120818);
+      if (on) b.rect(x + 1, 17, 8, 3, this.heatFlash > 0 && i === g.heat - 1 ? 0xffffff : col);
+      else b.rect(x + 1, 17, 8, 3, 0x3a2040);
+    }
     // pause
     b.rect(PAUSE_RECT.x, PAUSE_RECT.y, PAUSE_RECT.w, PAUSE_RECT.h, C.panel, 0.7);
     b.rect(PAUSE_RECT.x + 6, PAUSE_RECT.y + 3, 2, 6, C.text);

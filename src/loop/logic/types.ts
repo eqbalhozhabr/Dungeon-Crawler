@@ -7,6 +7,9 @@ export const RING = DISTRICTS * DROWS;
 export const BINS = 4;
 export const MAX_ECHOES = 3;
 export const MAX_HP = 3;
+/** Alert: foes left alive raise it, a clean sweep lowers it. At HEAT_MAX the guards arrive and cost a heart. */
+export const HEAT_MAX = 7;
+export const HEAT_AFTER_GUARDS = 3;
 
 export type RuneId = 'coin' | 'bandit' | 'brute' | 'spikes' | 'fountain';
 export const RUNES: RuneId[] = ['coin', 'bandit', 'brute', 'spikes', 'fountain'];
@@ -42,6 +45,8 @@ export type GameEvent =
   | { t: 'coin'; who: number; lane: number; row: number; n: number; fromKill: boolean }
   | { t: 'strike'; who: number; lane: number; row: number; kill: boolean }
   | { t: 'hurt'; lane: number }
+  | { t: 'heat'; heat: number; survivors: number }
+  | { t: 'guards' }
   | { t: 'heal'; lane: number }
   | { t: 'lap'; lap: number; speed: number; echoes: number }
   | { t: 'slide' }

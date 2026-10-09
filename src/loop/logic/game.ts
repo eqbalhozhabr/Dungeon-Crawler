@@ -5,6 +5,8 @@ import {
   BINS,
   DISTRICTS,
   DROWS,
+  HEAT_AFTER_GUARDS,
+  HEAT_MAX,
   LANES,
   MAX_ECHOES,
   MAX_HP,
@@ -23,7 +25,8 @@ const INVULN = 1.1;
 const TREMOR_EVERY = 3;
 /** A district is locked for sliding while you run through it, and in the last rows before you reach it. */
 const LOCK_AHEAD = 3;
-const LANE_COOLDOWN = 0; // no cooldown: a dropped tap feels broken
+/** Seconds to shift one lane. Input is buffered (you steer towards `want`), so taps are never lost, but one runner cannot be everywhere. */
+const LANE_STEP = 0.2;
 const SUBSTEP = 0.2;
 
 /** Rows ahead of `p` (0 = here), wrapping round the ring. */
@@ -43,12 +46,15 @@ export class Game {
   time = 0;
   delay = START_DELAY;
   lane = 1;
+  /** The lane you are steering towards. */
+  want = 1;
   hp = MAX_HP;
   coins = 0;
   ghostCoins = 0;
   kills = 0;
   slides = 0;
   invuln = 0;
+  heat = 0;
   over = false;
   echoes: Echo[] = [];
   path = new Uint8Array(RING * BINS).fill(1);
@@ -145,14 +151,18 @@ export class Game {
   // ---------------------------------------------------------------- input
   setLane(l: number): void {
     if (this.over) return;
-    l = Math.max(0, Math.min(LANES - 1, l));
-    if (l === this.lane || this.laneCool > 0) return;
-    this.lane = l;
-    this.laneCool = LANE_COOLDOWN;
+    this.want = Math.max(0, Math.min(LANES - 1, l));
+    this.shift();
   }
 
   moveLane(dir: number): void {
-    this.setLane(this.lane + dir);
+    this.setLane(this.want + dir);
+  }
+
+  private shift(): void {
+    if (this.want === this.lane || this.laneCool > 0) return;
+    this.lane += Math.sign(this.want - this.lane);
+    this.laneCool = LANE_STEP;
   }
 
   /** Cells that would shift if the player taps (d,l), or null when not allowed. The hole ends up at the tapped cell. */
@@ -194,6 +204,7 @@ export class Game {
     if (this.over) return;
     this.time += dt;
     this.laneCool = Math.max(0, this.laneCool - dt);
+    this.shift();
     this.invuln = Math.max(0, this.invuln - dt);
     if (this.delay > 0) {
       this.delay -= dt;
@@ -217,6 +228,7 @@ export class Game {
     if (this.over) return;
     const d0 = Math.floor(p0 / DROWS);
     if (d0 !== Math.floor(this.p / DROWS)) this.leaveDistrict(d0);
+    if (this.over) return;
     if (raw >= RING) this.endLap();
   }
 
@@ -283,8 +295,8 @@ export class Game {
     }
   }
 
-  private hurt(lane: number): void {
-    if (this.invuln > 0 || this.over) return;
+  private hurt(lane: number, force = false): void {
+    if ((this.invuln > 0 && !force) || this.over) return;
     this.hp--;
     this.invuln = INVULN;
     this.events.push({ t: 'hurt', lane });
@@ -295,10 +307,45 @@ export class Game {
   }
 
   private leaveDistrict(dd: number): void {
+    let survivors = 0;
+    let hadFoes = false;
     for (let l = 0; l < LANES; l++) {
       const t = this.grid[dd][l];
-      if (t) t.state = freshState(t, this.level());
+      if (!t) continue;
+      let foe = false;
+      let alive = false;
+      t.items.forEach((it, i) => {
+        if (it.kind !== 'bandit' && it.kind !== 'brute') return;
+        foe = true;
+        if (t.state[i] > 0) alive = true;
+      });
+      if (foe) hadFoes = true;
+      if (alive) survivors++;
+      t.state = freshState(t, this.level());
     }
+    // foes left alive raise the alert; sweeping a district that had foes calms it
+    const before = this.heat;
+    if (survivors > 0) this.heat += survivors;
+    else if (hadFoes) this.heat = Math.max(0, this.heat - 1);
+    if (this.heat !== before) this.events.push({ t: 'heat', heat: this.heat, survivors });
+    if (this.heat >= HEAT_MAX) {
+      this.heat = HEAT_AFTER_GUARDS;
+      this.events.push({ t: 'guards' });
+      this.hurt(this.lane, true);
+    }
+  }
+
+  /** True when a foe tile has no ghost running through its lane at the foe's row (so it will probably survive). */
+  uncovered(d: number, l: number): boolean {
+    const t = this.grid[d][l];
+    if (!t) return false;
+    let foes = false;
+    for (const it of t.items) {
+      if (it.kind !== 'bandit' && it.kind !== 'brute') continue;
+      foes = true;
+      if (this.ghostsIn(l, d * DROWS + it.off) > 0) return false;
+    }
+    return foes;
   }
 
   private endLap(): void {

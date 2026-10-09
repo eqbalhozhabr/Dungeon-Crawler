@@ -5,7 +5,7 @@ Status: playable prototype. Everything below is what the prototype does today, p
 
 ## 1. Pitch
 
-An endless runner whose track is a **ring**: a sunset bazaar alley that loops back on itself, so the road curls up into the sky ahead like the inside of a cylinder. Every lap you run is **recorded and becomes a ghost** that repeats it on the next laps. A **3x3 rune grid under the street is the map of the alley** (3 districts x 3 lanes): slide the runes like a sliding puzzle to rebuild the street ahead of you, live, around your ghosts.
+An endless runner whose track is a **ring**: a sunset bazaar alley that loops back on itself. You run on the **outside** of the drum, seen through a fisheye lens, so the road falls away over the curve towards the sunset and the buildings splay and lean like in the reference picture. Every lap you run is **recorded and becomes a ghost** that repeats it on the next laps. A **3x3 rune grid under the street is the map of the alley** (3 districts x 3 lanes): slide the runes like a sliding puzzle to rebuild the street ahead of you, live, around your ghosts.
 
 The question the whole game asks: **what do you leave behind for your next self?**
 
@@ -47,6 +47,8 @@ Everything respawns when you leave its district. A start layout has 8 runes + 1 
 
 **Hearts and score.** 3 hearts, 1.1 s of invulnerability after a hit. Score = coins + 5 per lap. Best score and run count are saved in localStorage.
 
+**The view.** The road is the outside of a cylinder (radius `CAM.R` rows). Ahead of you it drops away, and the curve hides everything past about 12 rows; buildings stand radially, so far ones lean away. A fisheye lens (`CAM.lens`, 1 = none) then bends everything: near buildings splay outwards, verticals bow. Walls are drawn as grids of small projected quads so the bending shows. Tuning: `CAM` in `src/loop/camera.ts` (curve, camera height/pitch, focal length, lens).
+
 ## 4. Screens and controls
 
 - **Street (top).** Tap or drag anywhere on it to choose the lane. Keyboard: A / D or arrows, 1 2 3.
@@ -83,7 +85,8 @@ All sounds are synthesised in `src/loop/audio.ts` (WebAudio). The score is not a
 | Path | What |
 |---|---|
 | `src/loop/logic/` | Pure rules: `game.ts` (ring, ghosts, alert, sliding), `runes.ts` (tile contents), `bot.ts` (sim and attract mode) |
-| `src/loop/scene.ts` | The street: ring projection, per-pixel ground, buildings, sprites, effects |
+| `src/loop/camera.ts` | The camera: outside-of-a-drum geometry, fisheye lens, ground map (all the look is tuned in `CAM`) |
+| `src/loop/scene.ts` | The street: per-pixel ground, buildings (grids of projected quads so edges bend), sprites, effects |
 | `src/loop/panel.ts` | Rune grid, HUD, banners, hints |
 | `src/loop/art/` | `buf.ts` software pixel buffer (polygons, text, sprites), `sprites.ts` ASCII sprites |
 | `src/loop/audio.ts` | Synth and the event-driven music |

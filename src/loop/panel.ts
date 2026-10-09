@@ -1,56 +1,26 @@
-// Everything below the street and on top of it: the rune grid (the ring's map), the HUD, banners and hints.
-import { PixBuf, mixc } from './art/buf';
+// Everything below the street and on top of it: the seal board (the next four formations), the HUD, banners and hints.
+import { PixBuf } from './art/buf';
 import { SPR } from './art/sprites';
-import { C, DISTRICT_COL, FLOOR, GRID, H, SCENE_H, tileRect, W } from './config';
+import { C, H, SCENE_H, W } from './config';
+import { countSeats, crowd, describeNeed, meets, type Demand } from './logic/formation';
 import type { Game } from './logic/game';
-import { RUNE_HELP, RUNE_NAMES } from './logic/runes';
-import { BINS, DISTRICTS, DROWS, HEAT_MAX, LANES, MAX_ECHOES, MAX_HP, RING, type RuneId } from './logic/types';
+import { LANES, MAX_ECHOES, MAX_HP, REACH_LAPS, SCORING_FROM } from './logic/types';
 
 export const PAUSE_RECT = { x: 161, y: 1, w: 17, h: 12 };
 
-/** Pictograms for the runes, drawn with lines like chalk marks. */
-export function drawRune(b: PixBuf, rune: RuneId, cx: number, cy: number, col: number): void {
-  switch (rune) {
-    case 'coin':
-      b.ring(cx, cy, 7, col);
-      b.ring(cx, cy, 3.4, col);
-      b.disc(cx, cy, 1, col);
-      b.rect(cx - 1, cy - 10, 2, 2, col);
-      break;
-    case 'bandit':
-      b.line(cx - 6, cy + 7, cx + 6, cy - 7, col);
-      b.line(cx - 5, cy + 7, cx + 7, cy - 7, col);
-      b.line(cx - 6, cy - 1, cx + 1, cy + 6, col);
-      b.line(cx - 6, cy - 2, cx + 0, cy + 5, col);
-      b.disc(cx - 7, cy + 8, 1.5, col);
-      break;
-    case 'brute':
-      b.line(cx - 7, cy - 7, cx + 7, cy - 7, col);
-      b.line(cx + 7, cy - 7, cx + 7, cy + 1, col);
-      b.line(cx + 7, cy + 1, cx, cy + 9, col);
-      b.line(cx, cy + 9, cx - 7, cy + 1, col);
-      b.line(cx - 7, cy + 1, cx - 7, cy - 7, col);
-      b.line(cx, cy - 7, cx, cy + 8, col);
-      b.line(cx - 6, cy - 2, cx + 6, cy - 2, col);
-      break;
-    case 'spikes':
-      for (const k of [-7, 0, 7]) {
-        b.line(cx + k - 3, cy + 7, cx + k, cy - 7, col);
-        b.line(cx + k + 3, cy + 7, cx + k, cy - 7, col);
-      }
-      b.line(cx - 10, cy + 8, cx + 10, cy + 8, col);
-      break;
-    case 'fountain':
-      b.line(cx, cy - 9, cx + 5, cy, col);
-      b.line(cx + 5, cy, cx + 4, cy + 5, col);
-      b.line(cx + 4, cy + 5, cx, cy + 7, col);
-      b.line(cx, cy + 7, cx - 4, cy + 5, col);
-      b.line(cx - 4, cy + 5, cx - 5, cy, col);
-      b.line(cx - 5, cy, cx, cy - 9, col);
-      b.line(cx - 8, cy + 10, cx - 4, cy + 8, col);
-      b.line(cx + 8, cy + 10, cx + 4, cy + 8, col);
-      break;
-  }
+const COL = { x: 8, w: 39, gap: 4, y: 221, h: 62 };
+const OK = 0x6bdc70;
+const BAD = 0xe0485a;
+const PLATE = 0x3a2448;
+
+export type Status = 'ok' | 'bad' | 'open';
+
+/** One lane's need drawn as a number on a plate. */
+export function drawNeedGlyph(b: PixBuf, n: { lo: number; hi: number }, cx: number, cy: number, scale: number, a = 1): void {
+  const col = n.lo === 0 && n.hi === 0 ? BAD : n.lo === 0 ? C.textDim : C.gold;
+  const s = describeNeed(n);
+  const w = b.textWidth(s, scale);
+  b.text(s, cx - w / 2, cy - (7 * scale) / 2, col, scale, a < 1 ? -1 : C.ink);
 }
 
 interface Banner {
@@ -61,15 +31,10 @@ interface Banner {
 }
 
 export class Panel {
-  private pos = new Map<number, { x: number; y: number }>();
   private banners: Banner[] = [];
   private hintText = '';
   private hintAge = 99;
   private hintDur = 0;
-  private tipText = '';
-  private tipAge = 99;
-  private heatSeen = 0;
-  private heatFlash = 0;
   t = 0;
 
   banner(text: string, sub = '', dur = 1.8): void {
@@ -86,169 +51,105 @@ export class Panel {
     return this.hintAge < this.hintDur;
   }
 
-  tip(rune: RuneId | null): void {
-    this.tipText = rune ? `${RUNE_NAMES[rune]}: ${RUNE_HELP[rune]}` : '';
-    this.tipAge = 0;
-  }
-
   reset(): void {
-    this.pos.clear();
     this.banners = [];
     this.hintAge = 99;
-    this.tipAge = 99;
-    this.heatSeen = 0;
-    this.heatFlash = 0;
   }
 
-  // ---------------------------------------------------------------- grid
-  draw(b: PixBuf, g: Game, dt: number, hover: { d: number; l: number } | null, showMove: boolean, hud = true): void {
+  draw(b: PixBuf, g: Game, dt: number, hud = true): void {
     this.t += dt;
-    this.tipAge += dt;
     this.hintAge += dt;
     b.clipY0 = 0;
     b.clipY1 = H;
-    // panel background
     b.rect(0, SCENE_H, W, H - SCENE_H, C.panel);
     for (let y = SCENE_H; y < H; y += 2) b.rect(0, y, W, 1, 0x321a38);
     b.rect(0, SCENE_H, W, 2, C.panelEdge);
     b.rect(0, SCENE_H + 2, W, 1, 0x120818);
 
-    const cur = g.district();
-    // the line above the grid: tip for the touched tile, or a default
-    const line = this.tipAge < 3 && this.tipText ? this.tipText : g.over ? '' : 'SLIDE RUNES INTO THE GAP';
-    b.textC(line, W / 2, SCENE_H + 4, this.tipAge < 3 ? C.text : C.textDim);
+    b.textC(g.lap < SCORING_FROM ? 'WARM-UP: SCORING STARTS LAP 3' : 'YOUR SEAT BECOMES A GHOST', W / 2, SCENE_H + 6, C.textDim);
+    for (let k = 0; k < REACH_LAPS; k++) this.column(b, g, g.nextSeal + k, COL.x + k * (COL.w + COL.gap), k === 0);
 
-    // district notches and the "you are here" arrow
-    for (let d = 0; d < DISTRICTS; d++) {
-      const r = tileRect(d, 0);
-      b.rect(3, r.y + 3, 3, r.h - 6, DISTRICT_COL[d], d === cur ? 1 : 0.55);
-      if (d === cur) {
-        const bx = 7 + Math.round(Math.sin(this.t * 8));
-        b.line(bx - 1, r.y + r.h / 2 - 3, bx + 1, r.y + r.h / 2, C.gold);
-        b.line(bx - 1, r.y + r.h / 2 + 3, bx + 1, r.y + r.h / 2, C.gold);
-      }
-    }
-
-    // tiles slide towards their cells
-    const movable = new Set<number>();
-    if (showMove)
-      for (let d = 0; d < DISTRICTS; d++)
-        for (let l = 0; l < LANES; l++) {
-          const t = g.grid[d][l];
-          if (t && g.slideCells(d, l)) movable.add(t.id);
-        }
-    for (let d = 0; d < DISTRICTS; d++)
-      for (let l = 0; l < LANES; l++) {
-        const r = tileRect(d, l);
-        const t = g.grid[d][l];
-        if (!t) {
-          this.hole(b, r.x, r.y);
-          continue;
-        }
-        let p = this.pos.get(t.id);
-        if (!p) {
-          p = { x: r.x, y: r.y };
-          this.pos.set(t.id, p);
-        }
-        const k = Math.min(1, dt * 22);
-        p.x += (r.x - p.x) * k;
-        p.y += (r.y - p.y) * k;
-        if (Math.abs(r.x - p.x) < 0.6) p.x = r.x;
-        if (Math.abs(r.y - p.y) < 0.6) p.y = r.y;
-        const isHover = hover?.d === d && hover.l === l;
-        this.tile(b, Math.round(p.x), Math.round(p.y), t.rune, g.isLocked(d), movable.has(t.id), isHover, d, g.echoes.length > 0 && g.uncovered(d, l));
-      }
-
-    this.paths(b, g);
     if (!hud) return;
+    this.streakRow(b, g);
     this.hud(b, g);
     this.drawBanners(b, dt);
     if (this.hintAge < this.hintDur) {
       const lines = this.hintText.split('\n');
       const h = lines.length * 9 + 6;
       const a = Math.min(1, (this.hintDur - this.hintAge) * 3, this.hintAge * 5);
-      b.rect(6, 28, W - 12, h, C.ink, 0.78 * a);
-      b.frame(6, 28, W - 12, h, C.panelEdge, a);
-      lines.forEach((ln, i) => b.textC(ln, W / 2, 32 + i * 9, C.text, 1));
+      b.rect(6, 17, W - 12, h, C.ink, 0.78 * a);
+      b.frame(6, 17, W - 12, h, C.panelEdge, a);
+      lines.forEach((ln, i) => b.textC(ln, W / 2, 21 + i * 9, C.text, 1));
     }
   }
 
-  private hole(b: PixBuf, x: number, y: number): void {
-    const w = GRID.tw;
-    const h = GRID.th;
-    b.rect(x + 1, y + 1, w - 2, h - 2, 0x2a1230);
-    const glow = 0.45 + 0.35 * Math.sin(this.t * 4);
-    b.rect(x + 3, y + 3, w - 6, h - 6, 0xf0b040, 0.12 + 0.12 * glow);
-    b.frame(x + 3, y + 3, w - 6, h - 6, 0xf0b040, 0.35 + 0.4 * glow);
-    const cx = x + w / 2;
-    const cy = y + h / 2;
-    b.line(cx - 4, cy, cx + 4, cy, 0xffd880, 0.6 + 0.4 * glow);
-    b.line(cx, cy - 4, cx, cy + 4, 0xffd880, 0.6 + 0.4 * glow);
+  // ---------------------------------------------------------------- one formation of the board
+  /** Can this formation still be met, given the seats already taken and how many are still to come? */
+  static status(demand: Demand, counts: number[], unknown: number): Status {
+    if (unknown === 0) return meets(demand, counts) ? 'ok' : 'bad';
+    let need = 0;
+    for (let i = 0; i < LANES; i++) {
+      if (counts[i] > demand[i].hi) return 'bad';
+      need += Math.max(0, demand[i].lo - counts[i]);
+    }
+    return need > unknown ? 'bad' : 'open';
   }
 
-  private tile(b: PixBuf, x: number, y: number, rune: RuneId, locked: boolean, movable: boolean, hover: boolean, d: number, uncovered: boolean): void {
-    const w = GRID.tw;
-    const h = GRID.th;
-    const base = (x / w + d) % 2 < 1 ? C.tileA : C.tileB;
-    b.rect(x + 1, y + 1, w - 2, h - 2, base);
-    b.rect(x + 1, y + 1, w - 2, 1, mixc(base, 0xffffff, 0.25));
-    b.rect(x + 1, y + h - 2, w - 2, 1, mixc(base, 0x000000, 0.25));
-    b.frame(x, y, w, h, C.tileEdge);
-    // chalk circle around the glyph
-    b.ring(x + w / 2, y + h / 2, 11.5, mixc(base, 0x6a3a8a, 0.35));
-    drawRune(b, rune, x + w / 2, y + h / 2, locked ? C.runeDim : C.rune);
-    if (locked) {
-      b.rect(x + 1, y + 1, w - 2, h - 2, 0x1d1026, 0.38);
-      b.sprite(SPR.lock, x + w - 7, y + 10, 8);
-    } else if (movable) {
-      const a = 0.35 + 0.35 * Math.sin(this.t * 7);
-      b.frame(x + 1, y + 1, w - 2, h - 2, 0xfff0b0, a);
-      b.frame(x + 2, y + 2, w - 4, h - 4, 0xfff0b0, a * 0.5);
-    }
-    // a swatch of the floor colour this rune gives its lane in the street
-    b.rect(x + w - 11, y + h - 8, 8, 5, 0x2a1530);
-    b.rect(x + w - 10, y + h - 7, 6, 3, FLOOR[rune]);
-    if (uncovered) {
-      // a foe no ghost will meet: it will probably survive and raise the alert
-      const a = 0.65 + 0.35 * Math.sin(this.t * 6);
-      b.rect(x + 3, y + 3, 7, 10, C.red, a);
-      b.text('!', x + 4, y + 5, 0xffffff);
-    }
-    if (hover) b.frame(x, y, w, h, C.text);
-  }
-
-  // ---------------------------------------------------------------- where you and your ghosts run, on the map
-  private paths(b: PixBuf, g: Game): void {
-    const at = (rr: number, lane: number) => {
-      const d = Math.min(DISTRICTS - 1, Math.floor(rr / DROWS));
-      const f = (rr - d * DROWS) / DROWS;
-      return { x: GRID.x + (lane + 0.5) * GRID.tw, y: GRID.y + (2 - d) * GRID.th + GRID.th * (1 - f) };
-    };
-    const trace = (lanes: Uint8Array, to: number, col: number, a: number, off: number, from = 0) => {
-      let prev: { x: number; y: number } | null = null;
-      for (let rr = from; rr <= to; rr += 0.5) {
-        const lane = lanes[Math.min(RING * BINS - 1, Math.floor(rr * BINS))];
-        const q = at(Math.min(RING - 0.01, rr), lane);
-        if (prev) b.line(prev.x + off, prev.y, q.x + off, q.y, col, a);
-        prev = q;
+  private column(b: PixBuf, g: Game, j: number, x: number, first: boolean): void {
+    const info = g.sealInfo(j);
+    const lanes = countSeats([...info.ghosts, ...(info.live ? [g.lane] : [])]);
+    const n = crowd(j);
+    const unknown = n - info.ghosts.length - (info.live ? 1 : 0);
+    const st = Panel.status(info.demand, lanes, unknown);
+    const edge = st === 'ok' && unknown === 0 ? OK : st === 'bad' ? BAD : first ? C.gold : C.panelEdge;
+    b.rect(x - 1, COL.y, COL.w + 2, COL.h, C.ink, 0.35);
+    b.frame(x - 1, COL.y, COL.w + 2, COL.h, edge, first ? 1 : 0.8);
+    b.textC(`LAP ${j + 1}`, x + COL.w / 2, COL.y + 3, first ? C.gold : C.text);
+    for (let l = 0; l < LANES; l++) {
+      const px = x + 1 + l * 13;
+      const py = COL.y + 14;
+      b.rect(px, py, 12, 13, PLATE);
+      b.frame(px, py, 12, 13, info.demand[l].lo > 0 ? 0x8a6a2a : 0x4a3458);
+      drawNeedGlyph(b, info.demand[l], px + 6, py + 7, 1);
+      // seats taken so far: ghosts (blue) stack up, you (red) on top
+      let level = 0;
+      for (const s of info.ghosts) if (s === l) b.disc(px + 6, COL.y + 52 - level++ * 6, 2.6, C.ghost);
+      if (info.live && g.lane === l) {
+        b.disc(px + 6, COL.y + 52 - level * 6, 3, 0xffffff);
+        b.disc(px + 6, COL.y + 52 - level * 6, 2, C.red);
       }
-    };
-    g.echoes.forEach((e, i) => {
-      trace(e.path, g.p, C.ghost, 0.2, (i - 1) * 2);
-      trace(e.path, RING - 0.5, C.ghost, 0.5, (i - 1) * 2, g.p);
+    }
+    if (unknown > 0) b.textC(`?${unknown}`, x + COL.w / 2, COL.y + 53, C.textDim);
+    else if (first) b.textC(st === 'ok' ? 'OK' : '!', x + COL.w / 2, COL.y + 53, st === 'ok' ? OK : BAD);
+    // thin separators between the three lanes' stacks
+    b.rect(x + 13, COL.y + 29, 1, 22, 0x4a3458, 0.5);
+    b.rect(x + 26, COL.y + 29, 1, 22, 0x4a3458, 0.5);
+  }
+
+  /** Streak, multiplier and the last seals. */
+  private streakRow(b: PixBuf, g: Game): void {
+    const y = COL.y + COL.h + 4;
+    b.text('STREAK', 8, y, C.textDim);
+    for (let i = 0; i < 8; i++) {
+      const on = i < g.streak;
+      b.rect(46 + i * 9, y, 7, 7, on ? C.gold : 0x3a2040);
+      if (on) b.rect(46 + i * 9, y, 7, 1, 0xfff0b0);
+    }
+    const m = `X${g.mult % 1 === 0 ? g.mult.toFixed(0) : g.mult.toFixed(1)}`;
+    b.text(m, 130, y, g.mult > 1 ? C.gold : g.mult < 1 ? BAD : C.text, 1, C.ink);
+    // last seals: green open, red shut, dim = warm-up
+    const hist = g.history.slice(-12);
+    b.text('SEALS', 8, y + 11, C.textDim);
+    b.disc(12, y + 25, 2.6, C.ghost);
+    b.text('GHOSTS', 18, y + 22, C.textDim);
+    b.disc(76, y + 25, 3, 0xffffff);
+    b.disc(76, y + 25, 2, C.red);
+    b.text('YOU', 82, y + 22, C.textDim);
+    hist.forEach((ok, i) => {
+      const lapIdx = g.history.length - hist.length + i;
+      const warm = lapIdx < SCORING_FROM;
+      b.rect(46 + i * 10, y + 10, 8, 8, ok ? OK : BAD, warm ? 0.45 : 1);
     });
-    trace(g.path, g.p, 0xff7a8a, 0.8, 0);
-    // playhead
-    const q = at(g.p, g.lane);
-    b.rect(GRID.x, Math.round(q.y), GRID.tw * LANES, 1, C.gold, 0.85);
-    b.rect(GRID.x - 3, Math.round(q.y) - 1, 3, 3, C.gold);
-    b.rect(GRID.x + GRID.tw * LANES, Math.round(q.y) - 1, 3, 3, C.gold);
-    g.echoes.forEach((_, i) => {
-      const gq = at(g.p, g.echoLane(i));
-      b.disc(gq.x + (i - 1) * 2, gq.y, 2.2, C.ghost, 0.95);
-    });
-    b.disc(q.x, q.y, 3, 0xffffff);
-    b.disc(q.x, q.y, 2, C.red);
   }
 
   // ---------------------------------------------------------------- top bar
@@ -265,23 +166,6 @@ export class Panel {
     b.disc(120, 6, 3, C.gold);
     b.disc(120, 6, 1.5, C.goldDark);
     b.text(s, 126, 2, C.gold, 1, C.ink);
-    // alert: foes left alive fill it, full alert costs a heart
-    if (g.heat !== this.heatSeen) {
-      if (g.heat > this.heatSeen) this.heatFlash = 0.6;
-      this.heatSeen = g.heat;
-    }
-    this.heatFlash = Math.max(0, this.heatFlash - 1 / 60);
-    b.rect(0, 14, W, 9, C.ink, 0.45);
-    b.text('ALERT', 3, 15, g.heat >= HEAT_MAX - 2 && Math.floor(this.t * 5) % 2 === 0 ? C.red : C.textDim);
-    for (let i = 0; i < HEAT_MAX; i++) {
-      const on = i < g.heat;
-      const col = i >= HEAT_MAX - 2 ? C.red : i >= 3 ? 0xf09a3a : 0xf0d060;
-      const x = 38 + i * 12;
-      b.rect(x, 16, 10, 5, 0x120818);
-      if (on) b.rect(x + 1, 17, 8, 3, this.heatFlash > 0 && i === g.heat - 1 ? 0xffffff : col);
-      else b.rect(x + 1, 17, 8, 3, 0x3a2040);
-    }
-    // pause
     b.rect(PAUSE_RECT.x, PAUSE_RECT.y, PAUSE_RECT.w, PAUSE_RECT.h, C.panel, 0.7);
     b.rect(PAUSE_RECT.x + 6, PAUSE_RECT.y + 3, 2, 6, C.text);
     b.rect(PAUSE_RECT.x + 10, PAUSE_RECT.y + 3, 2, 6, C.text);
@@ -298,3 +182,4 @@ export class Panel {
     if (bn.sub) b.textC(bn.sub, W / 2, y + 19, C.text, 1, C.ink);
   }
 }
+

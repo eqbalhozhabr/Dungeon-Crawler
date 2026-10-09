@@ -30,7 +30,7 @@ await page.waitForTimeout(600);
 
 const L = async (x, y) => page.evaluate(([x, y]) => { const r = document.querySelector('canvas').getBoundingClientRect(); return { x: r.left + (x / 180) * r.width, y: r.top + (y / 320) * r.height }; }, [x, y]);
 const click = async (x, y) => { const p = await L(x, y); await page.mouse.click(p.x, p.y); };
-const state = () => page.evaluate(() => ({ mode: window.__loop.mode, lane: window.__loop.game.lane, lap: window.__loop.game.lap, hp: window.__loop.game.hp, coins: window.__loop.game.coins, slides: window.__loop.game.slides, over: window.__loop.game.over, p: window.__loop.game.p }));
+const state = () => page.evaluate(() => ({ mode: window.__loop.mode, lane: window.__loop.game.lane, lap: window.__loop.game.lap, hp: window.__loop.game.hp, coins: window.__loop.game.coins, sealsOpen: window.__loop.game.sealsOpen, sealsShut: window.__loop.game.sealsShut, streak: window.__loop.game.streak, slides: 0, over: window.__loop.game.over, p: window.__loop.game.p }));
 
 (await state()).mode === 'title' ? good('starts on the title screen') : bad('no title');
 await click(90, 160); // PLAY
@@ -51,23 +51,17 @@ await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(
 await page.waitForTimeout(500);
 s = await state(); s.lane === 2 ? good('dragging steers') : bad('lane after drag ' + s.lane);
 
-// slide a free tile with a click on the grid
-await page.evaluate(() => { const g = window.__loop.game; g.p = 5; });
-const cell = await page.evaluate(() => { const g = window.__loop.game; for (let d = 0; d < 3; d++) for (let l = 0; l < 3; l++) if (g.grid[d][l] && g.slideCells(d, l)) return { d, l }; return null; });
-if (!cell) bad('no movable tile found');
-else {
-  const before = (await state()).slides;
-  await click(9 + cell.l * 54 + 27, 218 + (2 - cell.d) * 29 + 14);
-  const after = (await state()).slides;
-  after === before + 1 ? good('clicking a movable tile slides it') : bad(`slide count ${before} -> ${after}`);
-}
+// steering also works from the board area at the bottom (thumbs live there on a phone)
+await click(150, 290);
+await page.waitForTimeout(500);
+s = await state(); s.lane === 2 ? good('tapping the board area steers too') : bad('lane after board tap ' + s.lane);
 
 // a long bot-driven run: laps, ghosts, tremors, no errors
 await page.evaluate(() => { window.__loop.game.hp = 50; window.__loop.bot(true); });
 await page.waitForTimeout(100);
 await page.evaluate(() => window.__loop.skip(70));
 s = await state();
-s.lap >= 7 && !s.over ? good(`70 s with the bot: lap ${s.lap + 1}, coins ${s.coins}`) : bad('bot run ended early ' + JSON.stringify(s));
+s.lap >= 7 && !s.over ? good(`70 s with the bot: lap ${s.lap + 1}, coins ${s.coins}, seals open ${s.sealsOpen}/${s.sealsOpen + s.sealsShut}, streak ${s.streak}`) : bad('bot run ended early ' + JSON.stringify(s));
 await page.evaluate(() => window.__loop.bot(false));
 
 // pause and resume
@@ -78,7 +72,6 @@ await page.keyboard.press('p');
 
 // die on purpose, then play again with the button
 await page.evaluate(() => { const g = window.__loop.game; g.hp = 1; });
-await page.evaluate(() => { const g = window.__loop.game; for (let d = 0; d < 3; d++) g.grid[d][g.lane] = null; });
 await page.evaluate(() => { const g = window.__loop.game; g.hp = 0; });
 await page.evaluate(() => window.__loop.skip(0));
 // force a hurt: put a brute in your lane right ahead
@@ -106,7 +99,7 @@ saved && JSON.parse(saved).runs >= 2 ? good('progress saved: ' + saved) : bad('n
   await m.waitForTimeout(500);
   const T = (x, y) => m.evaluate(([x, y]) => { const r = document.querySelector('canvas').getBoundingClientRect(); return { x: r.left + (x / 180) * r.width, y: r.top + (y / 320) * r.height }; }, [x, y]);
   const tap = async (x, y) => { const p = await T(x, y); await m.touchscreen.tap(p.x, p.y); };
-  const st = () => m.evaluate(() => ({ mode: window.__loop.mode, lane: window.__loop.game.lane, slides: window.__loop.game.slides }));
+  const st = () => m.evaluate(() => ({ mode: window.__loop.mode, lane: window.__loop.game.lane, slides: 0 }));
   await tap(90, 160);
   (await st()).mode === 'play' ? good('phone: tap PLAY') : bad('phone: PLAY did not start');
   await tap(150, 120);
@@ -116,9 +109,9 @@ saved && JSON.parse(saved).runs >= 2 ? good('progress saved: ' + saved) : bad('n
   await m.waitForTimeout(500);
   (await st()).lane === 0 ? good('phone: tapping the left steers left') : bad('phone: lane ' + (await st()).lane);
   await m.evaluate(() => { window.__loop.game.p = 5; });
-  const c2 = await m.evaluate(() => { const g = window.__loop.game; for (let d = 0; d < 3; d++) for (let l = 0; l < 3; l++) if (g.grid[d][l] && g.slideCells(d, l)) return { d, l }; return null; });
-  await tap(9 + c2.l * 54 + 27, 218 + (2 - c2.d) * 29 + 14);
-  (await st()).slides === 1 ? good('phone: tapping a tile slides it') : bad('phone: slides ' + (await st()).slides);
+  await tap(150, 280);
+  await m.waitForTimeout(500);
+  (await st()).lane === 2 ? good('phone: tapping the board steers too') : bad('phone: board tap lane ' + (await st()).lane);
   await ctx2.close();
 }
 

@@ -1,14 +1,10 @@
 // Alley Echo: logical resolution (portrait 9:16) and palette. Everything is drawn into a 180x320 pixel buffer.
 export const W = 180;
 export const H = 320;
-/** The street view occupies y = 0..SCENE_H, the rune grid sits below it. */
+/** The street view occupies y = 0..SCENE_H, the seal board sits below it. */
 export const SCENE_H = 206;
 
 export const GAME_TITLE = 'Alley Echo'; // working title: check it is free on CrazyGames / itch / Steam before release
-
-export const GRID = { x: 9, y: 218, tw: 54, th: 29 };
-/** Screen rectangle of the tile at (district d, lane l). District 0 is the bottom row: you run upwards. */
-export const tileRect = (d: number, l: number) => ({ x: GRID.x + l * GRID.tw, y: GRID.y + (2 - d) * GRID.th, w: GRID.tw, h: GRID.th });
 
 export const C = {
   ink: 0x1d1026,
@@ -36,8 +32,7 @@ export const DISTRICT_COL = [0x4ab8b0, 0xe05a5a, 0xf0c050];
 export const FLOOR: Record<string, number> = {
   coin: 0xd8c264,
   bandit: 0xa89cc0,
-  brute: 0xc07a68,
   spikes: 0x9c6a7c,
   fountain: 0x78b4aa,
-  hole: 0x8a7c5a,
+  bare: 0xb8a678,
 };

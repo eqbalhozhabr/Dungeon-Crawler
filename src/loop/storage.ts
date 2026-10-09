@@ -6,12 +6,13 @@ export interface Save {
   muted: boolean;
   best: number;
   bestLaps: number;
+  bestStreak: number;
   runs: number;
   /** Hints already shown (each is shown once). */
   hints: string[];
 }
 
-const DEFAULT: Save = { muted: false, best: 0, bestLaps: 0, runs: 0, hints: [] };
+const DEFAULT: Save = { muted: false, best: 0, bestLaps: 0, bestStreak: 0, runs: 0, hints: [] };
 let cache: Save | null = null;
 
 export function loadSave(): Save {

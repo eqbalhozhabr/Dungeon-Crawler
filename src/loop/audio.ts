@@ -178,6 +178,18 @@ export class Sound {
     this.hiss(0.2, 0.1, 700, 0.7, 'lowpass');
     this.tone(320, 'sine', 0.16, 0.003, 0.07, 1500, 200);
   }
+  /** The seal: an open one rings the lanes that were occupied as a chord, a shut one thuds. */
+  seal(open: boolean, counts: number[]): void {
+    if (open) {
+      counts.forEach((n, l) => {
+        if (n > 0) setTimeout(() => this.note(0, 14 + l * 2, 1), l * 40);
+      });
+      this.tone(ROOT / 2, 'sine', 0.3, 0.01, 0.9, 300);
+    } else {
+      this.tone(98, 'sawtooth', 0.2, 0.005, 0.35, 700, 70);
+      this.tone(104, 'sawtooth', 0.16, 0.005, 0.35, 700, 74);
+    }
+  }
   lap(): void {
     for (const [i, d] of [14, 18, 21].entries()) setTimeout(() => this.note(0, d, 0.9), i * 70);
     this.tone(ROOT / 2, 'sine', 0.35, 0.01, 0.8, 300);

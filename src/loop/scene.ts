@@ -3,7 +3,8 @@ import { BAYER4 } from '../art/pixel';
 import { PixBuf, mixc } from './art/buf';
 import { SPR } from './art/sprites';
 import { buildGroundMap, proj, scaleAt, type GroundMap } from './camera';
-import { C, DISTRICT_COL, FLOOR, SCENE_H, W } from './config';
+import { C, FLOOR, SCENE_H, W } from './config';
+import { countSeats, crowd, describeNeed, meets } from './logic/formation';
 import { rel, type Game } from './logic/game';
 import { BINS, DISTRICTS, DROWS, LANES, RING } from './logic/types';
 
@@ -142,6 +143,7 @@ export class Scene {
     this.ground(g, ox);
     const list: Draw[] = [];
     this.collectBuildings(g, list, ox);
+    this.collectSeal(g, list, ox);
     this.collectItems(g, list, ox);
     this.collectAgents(g, list, ox, dt);
     list.sort((a, c) => c.d - a.d);
@@ -183,7 +185,7 @@ export class Scene {
           for (let i = 0; i < g.echoes.length; i++) gl[g.echoes[i].path[Math.floor(rr * BINS) % (RING * BINS)]]++;
         }
         const fog = clamp((d - 1.5) / span, 0, 1) * 0.92;
-        const stripe = idx % DROWS === 0 && fr < 0.14;
+        const stripe = idx === 0 && fr < 0.14;
         const u = (X + 1.5 * LW) / LW;
         let col: number;
         if (u < 0 || u >= LANES) {
@@ -192,15 +194,14 @@ export class Scene {
         } else {
           const lane = Math.floor(u);
           const tile = g.grid[dist][lane];
-          col = FLOOR[tile ? tile.rune : 'hole'];
+          col = FLOOR[tile.rune];
           const fu = u - lane;
           const hs = hash(Math.floor(X * 14), Math.floor(rr * 14)) & 15;
           if (hs === 0) col = mixc(col, 0xffffff, 0.12);
           else if (hs === 1) col = mixc(col, 0x000000, 0.1);
-          if (!tile && hs < 6) col = mixc(col, 0x000000, 0.16);
           if (fr < 0.05 || fu < 0.035 || fu > 0.965) col = mixc(col, 0x3a2a30, 0.3);
           else if (idx & 1) col = mixc(col, 0x000000, 0.05);
-          if (stripe) col = mixc(col, DISTRICT_COL[dist], 0.75);
+          if (stripe) col = mixc(col, C.gold, 0.7);
           if (gl[lane] > 0) col = mixc(col, C.ghost, 0.1 + 0.07 * gl[lane]);
           if (lane === g.lane && !g.over) col = mixc(col, 0xffffff, 0.06);
         }
@@ -287,17 +288,20 @@ export class Scene {
           }
         },
       });
-      // the gate across the street where a district starts
+      // an arch across the street at every district boundary; the one at the start of the lap is the seal
       if (idx % DROWS === 0) {
-        const dist = Math.floor(idx / DROWS) % DISTRICTS;
-        if (d0 > DMIN && d0 < this.dMax)
+        const seal = idx === 0;
+        if (d0 > DMIN && d0 < this.dMax && !(seal && d0 < 0.2))
           list.push({
             d: d0,
             fn: () => {
-              this.surf((u, v) => [d0, -WX + 2 * WX * u, 2.05 + 0.5 * v], fg(mixc(DISTRICT_COL[dist], 0x2a1a3a, 0.25)), ox, 1, 8, 2);
-              const m = proj(d0, 0, 2.3, ox);
-              const sx = Math.max(1, Math.round(scaleAt(d0, 0, ox).sx * 0.07));
-              for (let i = 0; i <= dist; i++) this.b.rect(m.x - ((dist + 1) * sx * 2) / 2 + i * sx * 2, m.y - sx * 2, sx, sx * 4, fg(0xfbeed8));
+              const col = seal ? mixc(0xd8a838, 0x2a1a3a, 0.2) : mixc(0x9a8a9a, 0x2a1a3a, 0.35);
+              this.surf((u, v) => [d0, -WX + 2 * WX * u, 2.05 + 0.5 * v], fg(col), ox, 1, 8, 2);
+              if (seal) {
+                const m = proj(d0, 0, 2.3, ox);
+                const sx = Math.max(1, Math.round(scaleAt(d0, 0, ox).sx * 0.07));
+                for (let i = -1; i <= 1; i++) this.b.rect(m.x + i * sx * 3 - sx / 2, m.y - sx * 2, sx, sx * 4, fg(0xfff0c0));
+              }
             },
           });
       }
@@ -312,6 +316,49 @@ export class Scene {
       pts.push(q.x, q.y);
     }
     this.b.poly(pts, col);
+  }
+
+  // ---------------------------------------------------------------- the seal: three plates on the road, one per lane
+  private collectSeal(g: Game, list: Draw[], ox: number): void {
+    // the seal at row 0 is behind you for the first rows of a lap (then it shows the formation just checked)
+    const near = g.p < 1.2;
+    const j = near ? Math.max(0, g.nextSeal - 1) : g.nextSeal;
+    const d = near ? -g.p : RING - g.p;
+    if (d < -0.5 || d > this.dMax) return;
+    const info = g.sealInfo(j);
+    const lanes = countSeats([...info.ghosts, ...(info.live ? [g.lane] : [])]);
+    const complete = info.ghosts.length + (info.live ? 1 : 0) === crowd(j);
+    const met = complete && meets(info.demand, lanes);
+    const fog = clamp((d - 1.5) / (this.dMax - 1.5), 0, 1) * 0.9;
+    list.push({
+      d: d - 0.01,
+      fn: () => {
+        const b = this.b;
+        for (let l = 0; l < LANES; l++) {
+          const X = (l - 1) * LW;
+          const need = info.demand[l];
+          const edge = met ? 0x6bdc70 : need.lo > 0 ? C.gold : need.hi === 0 ? 0xe0485a : 0x6a5a7a;
+          this.surf((u, v) => [d - 0.45 + 0.9 * u, X - 0.35 + 0.7 * v, 0], mixc(edge, C.haze, fog), ox, 1, 0, 0);
+          this.surf((u, v) => [d - 0.38 + 0.76 * u, X - 0.29 + 0.58 * v, 0], mixc(0x3a2448, C.haze, fog), ox, 1, 0, 0);
+          const c = proj(d, X, 0, ox);
+          const sc = scaleAt(d, X, ox);
+          const label = describeNeed(need);
+          if (sc.sx >= 16) {
+            const scale = sc.sx >= 40 ? 3 : sc.sx >= 26 ? 2 : 1;
+            const w = b.textWidth(label, scale);
+            b.text(label, c.x - w / 2, c.y - (scale * 7) / 2, mixc(need.lo === 0 && need.hi === 0 ? 0xe0485a : need.lo === 0 ? 0xb89aa6 : C.gold, C.haze, fog), scale, C.ink);
+          } else if (need.lo > 0) {
+            const r = Math.max(1, sc.sx * 0.07);
+            for (let i = 0; i < Math.min(need.lo, 3); i++) b.disc(c.x + (i - (Math.min(need.lo, 3) - 1) / 2) * r * 2.6, c.y, r, mixc(C.gold, C.haze, fog));
+          }
+          // runners already standing there: ghosts that will still be around at the seal (blue rings)
+          let n = 0;
+          for (const s of info.ghosts) if (s === l) n++;
+          const r2 = Math.max(1.5, sc.sx * 0.085);
+          for (let i = 0; i < n; i++) b.ring(c.x + (i - (n - 1) / 2) * r2 * 2.6, c.y + sc.sy * 0.26, r2, C.ghost);
+        }
+      },
+    });
   }
 
   // ---------------------------------------------------------------- things lying in the street
@@ -381,16 +428,14 @@ export class Scene {
               },
             });
           } else {
-            const brute = it.kind === 'brute';
             list.push({
               d,
               fn: () => {
-                const spr = brute ? SPR.brute : SPR.bandit;
-                const h = sc.sy * (brute ? 1.05 : 0.8);
+                const spr = SPR.bandit;
+                const h = sc.sy * 0.8;
                 b.ell(q0.x, q0.y, h * 0.34, h * 0.09, 0x000000, 0.3);
                 const bob = Math.round(Math.sin(this.t * 6 + i * 2 + dd) * (h > 24 ? 1 : 0));
                 b.sprite(spr, q0.x, q0.y + bob, h, { tint: C.haze, tintAmount: f });
-                if (brute && tile.state[i] === 1) b.rect(q0.x - h * 0.2, q0.y - h - 3, h * 0.4, 2, C.red);
               },
             });
           }

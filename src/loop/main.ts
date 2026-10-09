@@ -1,12 +1,12 @@
-// Alley Echo: canvas, input, scenes (title / play / pause / game over) and the glue between rules, art and sound.
+// Alley Echo: canvas, input, screens (title / play / pause / game over) and the glue between rules, art and sound.
 import { DEBUG } from '../target';
 import { PixBuf } from './art/buf';
-import { C, GAME_TITLE, GRID, H, SCENE_H, W } from './config';
-import { botLane, botSlide } from './logic/bot';
-import { Game, rel } from './logic/game';
-import { LANES, RING, type GameEvent } from './logic/types';
+import { C, GAME_TITLE, H, W } from './config';
+import { botLane } from './logic/bot';
+import { Game } from './logic/game';
+import { RING, SCORING_FROM, type GameEvent } from './logic/types';
 import { Sound } from './audio';
-import { PAUSE_RECT, Panel, drawRune } from './panel';
+import { PAUSE_RECT, Panel } from './panel';
 import { Scene } from './scene';
 import { loadSave, writeSave } from './storage';
 
@@ -41,17 +41,10 @@ let demo = true; // the title screen runs a bot in the background
 let botPlays = false;
 let overT = 0;
 let newBest = false;
-let hover: { d: number; l: number } | null = null;
 let buttons: Btn[] = [];
 let page = 0; // title "how to play" page, 0 = none
 const prevGhost = new Map<number, number>();
 let prevLane = game.lane;
-let tipRune = 0;
-let rngS = 12345;
-const rnd = () => {
-  rngS = (rngS * 1664525 + 1013904223) >>> 0;
-  return rngS / 4294967296;
-};
 
 // ---------------------------------------------------------------- layout: whole device pixels, never blurry
 function resize(): void {
@@ -109,6 +102,7 @@ function endRun(): void {
     newBest = true;
   }
   save.bestLaps = Math.max(save.bestLaps, game.lap + 1);
+  save.bestStreak = Math.max(save.bestStreak, game.bestStreak);
   writeSave();
 }
 
@@ -131,30 +125,28 @@ function handleEvents(g: Game, quiet: boolean): void {
         scene.popup(g.p, e.lane, '-1', C.red);
         if (!quiet) sound.hurt();
         break;
-      case 'heat':
-        if (!quiet && e.survivors > 0) sound.click();
-        break;
-      case 'guards':
-        panel.banner('THE GUARDS ARRIVE', 'FULL ALERT COSTS A HEART', 2.2);
-        scene.shake = 0.8;
-        if (!quiet) sound.tremor();
-        break;
       case 'heal':
         scene.popup(g.p, e.lane, 'HEAL', C.good);
         if (!quiet) sound.heal();
         break;
-      case 'slide':
-        if (!quiet) sound.slide();
+      case 'seal': {
+        const open = e.ok;
+        for (let l = 0; l < 3; l++) if (e.counts[l] > 0) scene.burst(0, l, open ? C.gold : C.red, open ? 9 : 4, 0.2);
+        if (!e.scoring) {
+          panel.banner(open ? 'SEAL OPEN' : 'SEAL SHUT', e.lap === 0 ? 'WARM-UP: NO PENALTY YET' : e.lap === 1 ? 'WARM-UP: SCORING STARTS NEXT LAP' : '', 1.8);
+        } else {
+          panel.banner(open ? 'SEAL OPEN' : 'SEAL SHUT', open ? `STREAK ${e.streak}  X${e.mult % 1 === 0 ? e.mult : e.mult.toFixed(1)}  +${e.bonus}` : 'STREAK LOST: THIS LAP PAYS HALF', 2);
+        }
+        if (!open && e.scoring) scene.flash = 0.35;
+        if (!quiet) sound.seal(open, e.counts);
         break;
+      }
       case 'lap':
-        panel.banner(`LAP ${e.lap + 1}`, e.echoes === 1 ? '1 GHOST RUNS WITH YOU' : e.echoes ? `${e.echoes} GHOSTS RUN WITH YOU` : '', 1.6);
-        if (!quiet) sound.lap();
+        if (!quiet && e.lap > 0) sound.lap();
         break;
       case 'upgrade':
-        break;
-      case 'tremor':
-        panel.banner('THE ALLEY SHIFTS', 'A RUNE TURNED WORSE, ONE TILE MOVED', 2.4);
-        scene.shake = 0.7;
+        panel.banner('THE ALLEY TURNS WORSE', 'ONE STRETCH OF STREET CHANGED', 2);
+        scene.shake = 0.6;
         if (!quiet) sound.tremor();
         break;
       case 'over':
@@ -191,17 +183,12 @@ function hints(g: Game): void {
     panel.hint(text, dur);
     return true;
   };
-  if (g.time > 0.4 && say('steer', 'TAP OR DRAG THE STREET\nTO CHANGE LANE\nYOU HIT WHAT IS IN YOUR LANE')) return;
-  if ((g.p > 12 || g.lap > 0) && say('coins', 'GRAB COINS, DODGE SPIKES\nTHIEVES DIE TO ONE HIT')) return;
-  if (g.heat > 0 && say('alert', 'FOES LEFT ALIVE RAISE ALERT\nFULL ALERT COSTS A HEART\nSWEEP FOES TO CALM IT', 5.5)) return;
-  if (g.lap >= 1 && g.p > 1 && say('ghost', 'A GHOST REPEATS YOUR LAP\nITS ROUTE: BLUE ON THE MAP', 5.5)) return;
-  if ((g.lap >= 2 || (g.lap === 1 && g.p > 10)) && say('slide', 'TAP GLOWING RUNES TO SLIDE\nTHEM INTO THE GAP\nPUT FOES IN A GHOST LANE (!)', 6)) return;
-  if (!save.hints.includes('steer')) return;
-  for (let l = 0; l < LANES; l++)
-    for (let d = 0; d < 3; d++) {
-      const t = g.grid[d][l];
-      if (t?.rune === 'brute' && t.state[0] > 0 && rel(d * 10 + 5, g.p) < 8 && say('brute', 'A BRUTE NEEDS TWO HITS\nRUN ITS LANE WITH A GHOST')) return;
-    }
+  if (g.delay > 0 && say('seal0', 'THE SEAL IS UNDER YOU NOW:\nSTAND IN THE LANE OF THE\nGOLD PLATE', 3)) return;
+  if (g.time > 2.6 && say('steer2', 'TAP OR DRAG TO CHANGE LANE\nYOU HIT WHAT IS IN YOUR LANE')) return;
+  if ((g.p > 12 || g.lap > 0) && say('coins2', 'GRAB COINS, DODGE SPIKES\nTHIEVES DIE TO ONE HIT')) return;
+  if (g.lap >= 1 && g.p > 1 && say('ghost2', 'YOUR LAST LAP IS A GHOST NOW\nIT STANDS WHERE YOU STOOD\nAT THE SEAL', 5.5)) return;
+  if (g.lap >= 1 && g.p > 9 && say('board2', 'BELOW: THE NEXT FOUR SEALS\nTHE LANE YOU TAKE NOW STAYS\nAS A GHOST FOR 3 MORE LAPS', 6.5)) return;
+  if (g.lap >= SCORING_FROM && g.p > 1 && say('score2', 'FROM LAP 3 AN OPEN SEAL\nBUILDS A MULTIPLIER\nA SHUT SEAL HALVES THE LAP', 5.5)) return;
 }
 
 // ---------------------------------------------------------------- input
@@ -210,12 +197,6 @@ const logical = (e: PointerEvent): { x: number; y: number } => {
   return { x: ((e.clientX - r.left) / r.width) * W, y: ((e.clientY - r.top) / r.height) * H };
 };
 const laneAt = (x: number) => (x < W / 3 ? 0 : x < (2 * W) / 3 ? 1 : 2);
-const tileAt = (x: number, y: number): { d: number; l: number } | null => {
-  const l = Math.floor((x - GRID.x) / GRID.tw);
-  const row = Math.floor((y - GRID.y) / GRID.th);
-  if (l < 0 || l >= 3 || row < 0 || row >= 3) return null;
-  return { d: 2 - row, l };
-};
 const hit = (b: Btn, x: number, y: number) => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h;
 let steer = -1;
 
@@ -244,6 +225,7 @@ function press(id: string): void {
   }
 }
 
+// anywhere on the screen steers: the lane is the third of the screen you touch (tap or drag)
 canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   sound.unlock();
@@ -251,39 +233,18 @@ canvas.addEventListener('pointerdown', (e) => {
   for (const b of buttons) if (hit(b, x, y)) return press(b.id);
   if (mode !== 'play') return;
   if (x >= PAUSE_RECT.x && y <= PAUSE_RECT.y + PAUSE_RECT.h + 2) return setPause(true);
-  if (y < SCENE_H) {
-    steer = e.pointerId;
-    canvas.setPointerCapture(e.pointerId);
-    game.setLane(laneAt(x));
-  } else {
-    const c = tileAt(x, y);
-    if (!c) return;
-    const t = game.grid[c.d][c.l];
-    panel.tip(t ? t.rune : null);
-    if (t && !game.slide(c.d, c.l)) {
-      sound.click();
-      if (game.isLocked(c.d)) panel.tip(t.rune);
-    }
-  }
+  steer = e.pointerId;
+  canvas.setPointerCapture(e.pointerId);
+  game.setLane(laneAt(x));
 });
 canvas.addEventListener('pointermove', (e) => {
-  const { x, y } = logical(e);
-  hover = mode === 'play' && e.pointerType === 'mouse' ? tileAt(x, y) : null;
-  if (hover && mode === 'play' && game.grid[hover.d][hover.l]) {
-    const r = game.grid[hover.d][hover.l]!.rune;
-    if (tipRune !== game.grid[hover.d][hover.l]!.id) {
-      tipRune = game.grid[hover.d][hover.l]!.id;
-      panel.tip(r);
-    }
-  }
-  if (e.pointerId === steer && mode === 'play') game.setLane(laneAt(x));
+  if (e.pointerId === steer && mode === 'play') game.setLane(laneAt(logical(e).x));
 });
 const release = (e: PointerEvent) => {
   if (e.pointerId === steer) steer = -1;
 };
 canvas.addEventListener('pointerup', release);
 canvas.addEventListener('pointercancel', release);
-canvas.addEventListener('pointerleave', () => (hover = null));
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 window.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
 
@@ -318,10 +279,9 @@ function button(id: string, label: string, x: number, y: number, w: number, h: n
   buf.rect(x, y, w, h, primary ? C.tileA : C.panel);
   buf.rect(x, y, w, 1, primary ? 0xffc890 : C.panelEdge);
   buf.rect(x, y + h - 2, w, 2, primary ? C.tileEdge : 0x120818);
-  buf.frame(x, y, w, h, primary ? mixGold(pulse) : C.panelEdge);
+  buf.frame(x, y, w, h, primary ? (pulse > 0.5 ? C.gold : 0xc88a3a) : C.panelEdge);
   buf.textC(label, x + w / 2, y + Math.round((h - 7) / 2), primary ? C.ink : C.text);
 }
-const mixGold = (t: number) => (t > 0.5 ? C.gold : 0xc88a3a);
 
 function dim(a: number, y0 = 0, y1 = H): void {
   buf.rect(0, y0, W, y1 - y0, C.ink, a);
@@ -337,23 +297,21 @@ function drawTitle(): void {
   button('play', 'PLAY', 40, 150, 100, 20, true);
   button('how', page ? 'NEXT >' : 'HOW TO PLAY', 40, 176, 100, 16);
   if (save.best > 0) buf.textC(`BEST ${save.best}`, W / 2, 196, C.gold, 1, C.ink);
-  // rune row as decoration
-  (['coin', 'bandit', 'brute', 'spikes', 'fountain'] as const).forEach((r, i) => drawRune(buf, r, 24 + i * 33, 12, 0xfff0d0));
   if (page) drawHow();
   button('sound', sound.muted ? 'SOUND OFF' : 'SOUND ON', 4, 300, 58, 14);
   buf.textC('M MUTES', 134, 303, C.textDim);
 }
 
 const HOW: string[][] = [
-  ['THE LOOP', '', 'THE ALLEY IS A RING.', 'YOU RUN IT AGAIN AND AGAIN.', 'STEER BETWEEN 3 LANES.', 'YOU HIT WHAT IS IN YOUR LANE:', 'THIEVES DIE, COINS ARE YOURS.', 'SPIKES AND BRUTES HURT.'],
-  ['ECHOES', '', 'AT THE END OF A LAP YOUR', 'RUN BECOMES A GHOST.', 'IT REPEATS YOUR LANES NEXT', 'LAP AND HITS AND GRABS.', 'GHOSTS NEVER GET HURT.', 'BRUTES NEED TWO HITS AT ONCE.'],
-  ['THE MAP', '', 'THE 9 RUNES BELOW ARE THE', 'ALLEY: 3 DISTRICTS, 3 LANES.', 'SLIDE RUNES INTO THE GAP TO', 'REBUILD THE STREET AHEAD.', 'PUT HAZARDS WHERE NO ONE', 'RUNS, FOES WHERE GHOSTS RUN.'],
+  ['THE LOOP', '', 'THE ALLEY IS A RING.', 'YOU RUN IT AGAIN AND AGAIN.', 'STEER BETWEEN 3 LANES.', 'YOU HIT WHAT IS IN YOUR LANE:', 'THIEVES DIE, COINS ARE YOURS.', 'SPIKES HURT.'],
+  ['ECHOES', '', 'AT THE END OF A LAP YOUR', 'RUN BECOMES A GHOST.', 'IT REPEATS YOUR LANES NEXT', 'LAP AND HITS AND GRABS.', 'UP TO 3 GHOSTS RUN WITH YOU.', 'GHOSTS NEVER GET HURT.'],
+  ['THE SEAL', '', 'AT THE START OF EVERY LAP', 'YOU AND YOUR GHOSTS STAND IN', 'LANES. THE PLATES SAY HOW', 'MANY PER LANE. MATCH THEM FOR', 'A MULTIPLIER. THE LANE YOU', 'TAKE STAYS A GHOST 3 LAPS:', 'PLAN AHEAD.'],
 ];
 function drawHow(): void {
   dim(0.85, 28, 200);
   const p = HOW[page - 1];
-  buf.textC(p[0], W / 2, 40, C.gold, 2, C.goldDark);
-  for (let i = 2; i < p.length; i++) buf.textC(p[i], W / 2, 62 + (i - 2) * 11, C.text, 1, C.ink);
+  buf.textC(p[0], W / 2, 36, C.gold, 2, C.goldDark);
+  for (let i = 2; i < p.length; i++) buf.textC(p[i], W / 2, 58 + (i - 2) * 11, C.text, 1, C.ink);
   buf.textC(`${page}/3`, W / 2, 176, C.textDim);
 }
 
@@ -377,10 +335,12 @@ function drawOver(): void {
   buf.textC(String(game.score), W / 2, y + 42, C.gold, 4, C.goldDark);
   if (newBest) buf.textC('NEW BEST!', W / 2, y + 76, C.good, 2, 0x000000);
   else buf.textC(`BEST ${save.best}`, W / 2, y + 78, C.textDim, 1);
-  const lines = [`LAPS  ${game.lap + 1}`, `COINS  ${game.coins}`, `GHOSTS TOOK  ${Math.round((game.ghostCoins / Math.max(1, game.coins)) * 100)}%`, `FOES  ${game.kills}`];
+  const scoring = Math.max(0, game.history.length - SCORING_FROM);
+  const open = game.history.slice(SCORING_FROM).filter(Boolean).length;
+  const lines = [`LAPS  ${game.lap + 1}`, `SEALS OPENED  ${open}/${scoring}`, `BEST STREAK  ${game.bestStreak}`, `GHOSTS TOOK  ${Math.round((game.ghostCoins / Math.max(1, game.coins)) * 100)}% OF COINS`];
   lines.forEach((s, i) => buf.textC(s, W / 2, y + 98 + i * 11, C.text, 1, C.ink));
-  button('again', 'AGAIN', 40, 200 + 8, 100, 20, true);
-  button('title', 'TITLE', 40, 232 + 8, 100, 16);
+  button('again', 'AGAIN', 40, 208, 100, 20, true);
+  button('title', 'TITLE', 40, 240, 100, 16);
 }
 
 // ---------------------------------------------------------------- main loop
@@ -391,10 +351,8 @@ function frame(now: number): void {
   buttons = [];
   if (mode === 'play' || mode === 'title' || mode === 'over') {
     if (mode === 'title' || botPlays) {
-      if (!game.over) {
-        game.setLane(botLane(game, 3.4));
-        if (rnd() < dt * 0.6) botSlide(game, rnd);
-      } else toTitle();
+      if (!game.over) game.setLane(botLane(game, 2.5, true));
+      else toTitle();
     }
     if (mode === 'over') overT += dt;
     if (!game.over) game.step(dt);
@@ -406,7 +364,7 @@ function frame(now: number): void {
     if (mode === 'play') hints(game);
   }
   scene.draw(game, mode === 'pause' ? 0 : dt);
-  panel.draw(buf, game, mode === 'pause' ? 0 : dt, hover, game.slides < 6 && !demo, mode !== 'title');
+  panel.draw(buf, game, mode === 'pause' ? 0 : dt, mode !== 'title');
   if (mode === 'title') drawTitle();
   else if (mode === 'pause') drawPause();
   else if (mode === 'over') drawOver();
@@ -430,10 +388,10 @@ if (DEBUG) {
     toTitle,
     pause: setPause,
     bot: (on: boolean) => (botPlays = on),
-    /** Fast-forward the current run with the bot. */
+    /** Fast-forward the current run with the bot (the planning one). */
     skip: (secs: number) => {
       for (let t = 0; t < secs && !game.over; t += 1 / 60) {
-        game.setLane(botLane(game, 3.4));
+        game.setLane(botLane(game, 2.5, true));
         game.step(1 / 60);
         handleEvents(game, true);
       }
@@ -444,7 +402,7 @@ if (DEBUG) {
       const t0 = performance.now();
       for (let i = 0; i < n; i++) {
         scene.draw(game, 1 / 60);
-        panel.draw(buf, game, 1 / 60, null, false);
+        panel.draw(buf, game, 1 / 60, true);
         buf.toCanvas(ctx);
       }
       return (performance.now() - t0) / n;

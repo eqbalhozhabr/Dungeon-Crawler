@@ -15,7 +15,11 @@
     "dev:salvage": "vite -c vite.salvage.config.ts",
     "build:salvage": "tsc --noEmit && vite build -c vite.salvage.config.ts && mv ${SALVAGE_OUT:-dist-salvage}/salvage.html ${SALVAGE_OUT:-dist-salvage}/index.html",
     "sim:salvage": "tsx scripts/salvage-sim.ts",
-    "test:salvage": "tsx scripts/salvage-rules.ts"
+    "test:salvage": "tsx scripts/salvage-rules.ts",
+    "dev:loop": "vite -c vite.loop.config.ts",
+    "build:loop": "tsc --noEmit && vite build -c vite.loop.config.ts && mv ${LOOP_OUT:-dist-loop}/loop.html ${LOOP_OUT:-dist-loop}/index.html",
+    "sim:loop": "tsx scripts/loop-sim.ts",
+    "test:loop": "tsx scripts/loop-rules.ts"
   },
   "dependencies": {
     "phaser": "3.90.0"

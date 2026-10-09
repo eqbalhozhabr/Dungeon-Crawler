@@ -13,5 +13,5 @@
     "noEmit": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "scripts/sim.ts", "scripts/salvage-sim.ts", "scripts/salvage-rules.ts", "vite.config.ts", "vite.salvage.config.ts"]
+  "include": ["src", "scripts/sim.ts", "scripts/salvage-sim.ts", "scripts/salvage-rules.ts", "scripts/loop-sim.ts", "scripts/loop-rules.ts", "vite.config.ts", "vite.salvage.config.ts", "vite.loop.config.ts"]
 }

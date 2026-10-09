@@ -27,6 +27,8 @@ The lane you stand in at the seal stays behind as a ghost for the next three lap
 
 **Auto-strike.** You hit whatever is in your lane when it is 1 row ahead. No attack button.
 
+**Pure mode (default since v0.3).** To test whether the seal puzzle can be felt, the default game has no obstacles: only coins on the street. Then the seal is what ends a run: a shut seal in a scoring lap costs a heart, every third open seal in a row gives one back (3 hearts). Spikes, thieves and wells come back with `?obstacles=1` (everything below about them applies to that mode).
+
 **The street.** 9 stretches of street (3 districts x 3 lanes): 3 purses (4 coins), 2 thieves (1 hit, pay 2), 2 spike strips (cost a heart), a well (heals, or pays 3 when you are healthy) and one open lane. Everything lies in rows 3 to 8 of a district; the rest is open street, so there is room to change lane before and after the seal. No district has two spike lanes. Every third lap one stretch turns worse (open -> purse -> thief -> spikes) and spikes get longer.
 
 **Ghosts.** At the end of a lap your path is stored. Next lap it is a ghost running beside you, hitting and grabbing exactly like you did. Max 3; the oldest dissolves. Ghosts are never hurt. When you share a lane with a ghost you get the credit.

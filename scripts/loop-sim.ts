@@ -1,4 +1,5 @@
 // Balance bots for "Alley Echo": play whole runs with simple lane heuristics and print survival, score and seals.
+// usage: [OBST=1] npx tsx scripts/loop-sim.ts [runs] [bot] [look]   (OBST=1 adds spikes, thieves and wells)
 // usage: npx tsx scripts/loop-sim.ts [runs] [bot] [look]   (bot = dodger | planner | sloppy | lazy)
 //   dodger  = only steers for coins and away from spikes (ignores the seal)
 //   planner = dodger that also takes a seat fitting every announced demand before each seal
@@ -19,7 +20,7 @@ function decide(g: Game, rnd: () => number): void {
 const tally: Record<string, number> = {};
 const rows: { laps: number; score: number; ghost: number; kills: number; open: number; tried: number; streak: number }[] = [];
 for (let s = 1; s <= runs; s++) {
-  const g = new Game(s);
+  const g = new Game(s, process.env.OBST === '1');
   let seed = s * 7919;
   const rnd = () => {
     seed = (seed * 1664525 + 1013904223) >>> 0;

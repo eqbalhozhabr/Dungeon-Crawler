@@ -35,8 +35,10 @@ sound.muted = save.muted;
 
 let mode: Mode = 'title';
 const seedParam = Number(new URLSearchParams(location.search).get('seed'));
+/** `?obstacles=1` brings back spikes, thieves and wells (the pure formation game is the default). */
+const OBSTACLES = new URLSearchParams(location.search).get('obstacles') === '1';
 const newSeed = () => (seedParam > 0 ? seedParam : (Date.now() ^ (Math.random() * 1e9)) >>> 0);
-let game = new Game(newSeed());
+let game = new Game(newSeed(), OBSTACLES);
 let demo = true; // the title screen runs a bot in the background
 let botPlays = false;
 let overT = 0;
@@ -60,7 +62,7 @@ resize();
 
 // ---------------------------------------------------------------- run control
 function startRun(): void {
-  game = new Game(newSeed());
+  game = new Game(newSeed(), OBSTACLES);
   demo = false;
   mode = 'play';
   prevGhost.clear();
@@ -74,7 +76,7 @@ function startRun(): void {
 }
 
 function toTitle(): void {
-  game = new Game(newSeed());
+  game = new Game(newSeed(), OBSTACLES);
   demo = true;
   mode = 'title';
   page = 0;
@@ -135,7 +137,7 @@ function handleEvents(g: Game, quiet: boolean): void {
         if (!e.scoring) {
           panel.banner(open ? 'SEAL OPEN' : 'SEAL SHUT', e.lap === 0 ? 'WARM-UP: NO PENALTY YET' : e.lap === 1 ? 'WARM-UP: SCORING STARTS NEXT LAP' : '', 1.8);
         } else {
-          panel.banner(open ? 'SEAL OPEN' : 'SEAL SHUT', open ? `STREAK ${e.streak}  X${e.mult % 1 === 0 ? e.mult : e.mult.toFixed(1)}  +${e.bonus}` : 'STREAK LOST: THIS LAP PAYS HALF', 2);
+          panel.banner(open ? 'SEAL OPEN' : 'SEAL SHUT', open ? `STREAK ${e.streak}  X${e.mult % 1 === 0 ? e.mult : e.mult.toFixed(1)}  +${e.bonus}` : g.obstacles ? 'STREAK LOST: THIS LAP PAYS HALF' : 'STREAK LOST: -1 HEART', 2);
         }
         if (!open && e.scoring) scene.flash = 0.35;
         if (!quiet) sound.seal(open, e.counts);
@@ -185,10 +187,10 @@ function hints(g: Game): void {
   };
   if (g.delay > 0 && say('seal0', 'THE SEAL IS UNDER YOU NOW:\nSTAND IN THE LANE OF THE\nGOLD PLATE', 3)) return;
   if (g.time > 2.6 && say('steer2', 'TAP OR DRAG TO CHANGE LANE\nYOU HIT WHAT IS IN YOUR LANE')) return;
-  if ((g.p > 12 || g.lap > 0) && say('coins2', 'GRAB COINS, DODGE SPIKES\nTHIEVES DIE TO ONE HIT')) return;
+  if ((g.p > 12 || g.lap > 0) && say('coins2', g.obstacles ? 'GRAB COINS, DODGE SPIKES\nTHIEVES DIE TO ONE HIT' : 'COINS ARE YOUR SCORE\nYOUR GHOSTS GRAB THEM TOO')) return;
   if (g.lap >= 1 && g.p > 1 && say('ghost2', 'YOUR LAST LAP IS A GHOST NOW\nIT STANDS WHERE YOU STOOD\nAT THE SEAL', 5.5)) return;
   if (g.lap >= 1 && g.p > 9 && say('board2', 'BELOW: THE NEXT FOUR SEALS\nTHE LANE YOU TAKE NOW STAYS\nAS A GHOST FOR 3 MORE LAPS', 6.5)) return;
-  if (g.lap >= SCORING_FROM && g.p > 1 && say('score2', 'FROM LAP 3 AN OPEN SEAL\nBUILDS A MULTIPLIER\nA SHUT SEAL HALVES THE LAP', 5.5)) return;
+  if (g.lap >= SCORING_FROM && g.p > 1 && say('score2', g.obstacles ? 'FROM LAP 3 AN OPEN SEAL\nBUILDS A MULTIPLIER\nA SHUT SEAL HALVES THE LAP' : 'FROM LAP 3 AN OPEN SEAL\nBUILDS A MULTIPLIER\nA SHUT SEAL COSTS A HEART', 5.5)) return;
 }
 
 // ---------------------------------------------------------------- input
@@ -303,7 +305,7 @@ function drawTitle(): void {
 }
 
 const HOW: string[][] = [
-  ['THE LOOP', '', 'THE ALLEY IS A RING.', 'YOU RUN IT AGAIN AND AGAIN.', 'STEER BETWEEN 3 LANES.', 'YOU HIT WHAT IS IN YOUR LANE:', 'THIEVES DIE, COINS ARE YOURS.', 'SPIKES HURT.'],
+  ['THE LOOP', '', 'THE ALLEY IS A RING.', 'YOU RUN IT AGAIN AND AGAIN.', 'STEER BETWEEN 3 LANES.', 'COINS ARE YOUR SCORE.', 'LOSE ALL HEARTS AND IT ENDS.'],
   ['ECHOES', '', 'AT THE END OF A LAP YOUR', 'RUN BECOMES A GHOST.', 'IT REPEATS YOUR LANES NEXT', 'LAP AND HITS AND GRABS.', 'UP TO 3 GHOSTS RUN WITH YOU.', 'GHOSTS NEVER GET HURT.'],
   ['THE SEAL', '', 'AT THE START OF EVERY LAP', 'YOU AND YOUR GHOSTS STAND IN', 'LANES. THE PLATES SAY HOW', 'MANY PER LANE. MATCH THEM FOR', 'A MULTIPLIER. THE LANE YOU', 'TAKE STAYS A GHOST 3 LAPS:', 'PLAN AHEAD.'],
 ];

@@ -20,7 +20,7 @@ const tile = (rune: RuneId): Tile => {
 };
 /** A game on an empty street (or the given runes), no start delay. */
 function alley(rows?: RuneId[][], seed = 1): Game {
-  const g = new Game(seed);
+  const g = new Game(seed, true);
   g.delay = 0;
   const r = rows ?? [['bare', 'bare', 'bare'], ['bare', 'bare', 'bare'], ['bare', 'bare', 'bare']];
   r.forEach((row, d) => row.forEach((x, l) => (g.grid[d][l] = tile(x))));
@@ -67,7 +67,7 @@ const demandOf = (...n: ({ lo: number; hi: number } | number)[]): Demand => n.ma
   let bad = 0;
   let spill = 0;
   for (let s = 1; s <= 200; s++) {
-    const g = new Game(s);
+    const g = new Game(s, true);
     for (let d = 0; d < 3; d++) {
       if (g.grid[d].filter((t) => t.rune === 'spikes').length > 1) bad++;
       for (const t of g.grid[d]) for (const it of t.items) if (it.off < 2.5 || it.off + it.len > 8.4) spill++;
@@ -172,6 +172,34 @@ const demandOf = (...n: ({ lo: number; hi: number } | number)[]): Demand => n.ma
     g.events.length = 0;
   }
   ok(evs.includes('upgrade'), 'an upgrade happens at lap 3');
+}
+{
+  // the pure game: only coins on the street; a shut seal costs a heart, three open seals in a row give one back
+  const g = new Game(3);
+  g.delay = 0;
+  ok(g.grid.every((row) => row.every((t) => t.rune === 'coin')), 'without obstacles every stretch of street is a purse');
+  g.step(1 / 60);
+  toLap(g, 3);
+  g.formations.demands[4] = demandOf(5, 0, 0); // never met
+  g.hp = 3;
+  g.streak = 0;
+  toLap(g, 4);
+  ok(g.hp === 2, `a shut seal in a scoring lap costs a heart (hp ${g.hp})`);
+  g.hp = 2;
+  g.streak = 2;
+  const win = (j: number) => countSeats(g.formations.seats.slice(Math.max(0, j - REACH + 1), j));
+  const j = g.lap + 1;
+  // make the next demand fit whatever lane we will stand in: copy the ghosts' counts plus our lane
+  g.setLane(1);
+  g.formations.demands[j] = countSeats([...g.formations.seats.slice(Math.max(0, j - REACH + 1), j), 1]).map((k) => exactly(k));
+  void win;
+  toLap(g, j);
+  ok(g.streak === 3 && g.hp === 3, `the third open seal in a row heals a heart (streak ${g.streak}, hp ${g.hp})`);
+  g.hp = 1;
+  g.streak = 0;
+  g.formations.demands[g.lap + 1] = demandOf(5, 0, 0);
+  toLap(g, g.lap + 1);
+  ok(g.over, 'losing the last heart to a seal ends the run');
 }
 {
   // determinism: same seed, same inputs, same result

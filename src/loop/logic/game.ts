@@ -69,7 +69,14 @@ export class Game {
   private laneCool = 0;
   private started = false;
 
-  constructor(readonly seed: number) {
+  /**
+   * `obstacles` off = a pure formation game: only coins on the street (no spikes, thieves, wells). A shut seal in a scoring lap
+   * then costs a heart and every third open seal in a row gives one back, so the seal is what ends a run.
+   */
+  constructor(
+    readonly seed: number,
+    readonly obstacles = false,
+  ) {
     this.rng = new Rng(seed);
     this.formations = new Formations(new Rng(seed ^ 0x9e3779b9));
     this.build();
@@ -93,6 +100,10 @@ export class Game {
 
   /** 9 stretches of street: 3 purses, 2 thieves, 2 spikes, a well, an open one; never two spike lanes in one district. */
   private build(): void {
+    if (!this.obstacles) {
+      for (let d = 0; d < DISTRICTS; d++) this.grid.push(Array.from({ length: LANES }, () => this.makeTile('coin')));
+      return;
+    }
     const runes: RuneId[] = ['coin', 'coin', 'coin', 'bandit', 'bandit', 'spikes', 'spikes', 'fountain', 'bare'];
     for (let tries = 0; tries < 500; tries++) {
       this.rng.shuffle(runes);
@@ -268,8 +279,13 @@ export class Game {
 
   private hurt(lane: number): void {
     if (this.invuln > 0 || this.over) return;
-    this.hp--;
     this.invuln = INVULN;
+    this.loseHeart(lane);
+  }
+
+  private loseHeart(lane: number): void {
+    if (this.over) return;
+    this.hp--;
     this.events.push({ t: 'hurt', lane });
     if (this.hp <= 0) {
       this.over = true;
@@ -315,9 +331,14 @@ export class Game {
       this.bestStreak = Math.max(this.bestStreak, this.streak);
       this.mult = Math.min(MAX_MULT, 1 + 0.5 * this.streak);
       bonus = 10 + 5 * Math.min(this.streak, 10);
+      if (!this.obstacles && this.streak % 3 === 0 && this.hp < MAX_HP) {
+        this.hp++;
+        this.events.push({ t: 'heal', lane: seat });
+      }
     } else {
       this.streak = 0;
       this.mult = SHUT_MULT;
+      if (!this.obstacles) this.loseHeart(seat);
     }
     this.points += bonus;
     this.events.push({ t: 'seal', lap: j, ok, scoring, counts, mult: this.mult, bonus, streak: this.streak, crowd: crowd(j) });
@@ -325,6 +346,7 @@ export class Game {
 
   /** Every few laps one stretch of street turns worse (never two spike lanes in a district). */
   private upgrade(): void {
+    if (!this.obstacles) return;
     const pool: Tile[] = [];
     for (let d = 0; d < DISTRICTS; d++) {
       const spikes = this.grid[d].filter((t) => t.rune === 'spikes').length;

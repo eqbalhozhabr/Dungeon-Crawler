@@ -90,6 +90,18 @@ const summary = (s) => s.pieces.map((p) => `${p.kind}${p.level}:${p.len}${p.axis
   assert.strictEqual(s.legends, 1);
 }
 
+// legend grants a x2 merge boost for a few moves
+{
+  let s = board('stretch', [{ r: 0, c: 0, level: 5, len: 4 }, { r: 1, c: 0, level: 5, len: 4 }]);
+  let res = E.move(s, 'down', E.mulberry32(1));
+  assert.strictEqual(res.state.boost, E.BOOST_MOVES);
+  s = board('stretch', [{ r: 0, c: 0 }, { r: 0, c: 1 }]);
+  s.boost = 2;
+  res = E.move(s, 'left', E.mulberry32(1));
+  assert.strictEqual(res.state.score, 8); // level 2 merge = 2^2, doubled
+  assert.strictEqual(res.state.boost, 1);
+}
+
 // game over on a locked board
 {
   const pieces = [];

@@ -41,6 +41,7 @@
 
   const LEGEND_BONUS = 500;
   const EAT_SCORE = 20;
+  const BOOST_MOVES = 5; // after a legend, merges are worth double for this many moves
 
   function mulberry32(seed) {
     let a = seed >>> 0;
@@ -124,7 +125,7 @@
     const mode = MODES[modeId];
     const state = {
       modeId, n: mode.n, pieces: [], nextId: 1,
-      score: 0, legends: 0, over: false,
+      score: 0, legends: 0, boost: 0, over: false,
     };
     spawn(state, rng || Math.random);
     spawn(state, rng || Math.random);
@@ -159,6 +160,8 @@
     const events = [];
     const done = new Set();
     const gone = new Set();
+    const mult = state.boost > 0 ? 2 : 1;
+    const snap = (p) => ({ id: p.id, level: p.level, len: p.len, axis: p.axis, r: p.r, c: p.c });
     let moved = false;
 
     const lead = (p) => Math.max(...cellsOf(p).map(([r, c]) => d[0] * r + d[1] * c));
@@ -182,13 +185,15 @@
       const union = new Set([...cellsOf(a), ...cellsOf(b)].map(([r, c]) => r * n + c));
       const pl = findPlacement(state, buildGrid(state), len, dAxis, union, null, d);
       if (!pl) return false;
+      const from = { a: snap(a), b: snap(b) };
       remove(a);
       remove(b);
       const merged = makePiece(state, { level, len, axis: pl.axis, r: pl.r, c: pl.c });
       state.pieces.push(merged);
       done.add(merged.id);
-      state.score += Math.pow(2, level);
-      events.push({ type: 'merge', id: merged.id, level });
+      const gain = Math.pow(2, level) * mult;
+      state.score += gain;
+      events.push(Object.assign({ type: 'merge', gain }, snap(merged), from));
       if (merged.len >= n) legend(merged);
       return true;
     };
@@ -200,6 +205,7 @@
       const require = new Set(cellsOf(cat).map(([r, c]) => r * n + c));
       const pl = findPlacement(state, buildGrid(state), len, prefAxis, union, require, d);
       if (!pl) return false;
+      const eaten = snap(fish);
       remove(fish);
       cat.len = len;
       cat.axis = pl.axis;
@@ -207,7 +213,7 @@
       cat.c = pl.c;
       done.add(cat.id);
       state.score += EAT_SCORE;
-      events.push({ type: 'eat', id: cat.id });
+      events.push({ type: 'eat', id: cat.id, fish: eaten, gain: EAT_SCORE });
       if (cat.len >= n) legend(cat);
       return true;
     };
@@ -266,8 +272,11 @@
   // One full turn: slide, then spawn. Returns a new state (the old one is untouched).
   function move(state, dirName, rng) {
     const next = clone(state);
+    const boosted = next.boost > 0;
     const res = slide(next, dirName);
     if (!res.moved) return { state, moved: false, events: [], over: state.over };
+    if (boosted) next.boost--;
+    if (res.events.some((e) => e.type === 'legend')) next.boost = BOOST_MOVES;
     const sp = spawn(next, rng || Math.random);
     const events = res.events;
     if (sp) events.push({ type: 'spawn', id: sp.id });
@@ -275,7 +284,7 @@
     return { state: next, moved: true, events, over: next.over };
   }
 
-  const api = { MODES, DIRS, createGame, move, slide, spawn, isOver, cellsOf, buildGrid, clone, mulberry32 };
+  const api = { MODES, BOOST_MOVES, DIRS, createGame, move, slide, spawn, isOver, cellsOf, buildGrid, clone, mulberry32 };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CatEngine = api;
 })(typeof window !== 'undefined' ? window : globalThis);

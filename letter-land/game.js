@@ -625,7 +625,7 @@
   });
   window.addEventListener('resize', () => { resize(); if (mode === 'menu') previews(); });
 
-  function previews() { Chars.preview($('pv-boy'), 'boy'); Chars.preview($('pv-girl'), 'girl'); }
+  function previews() { Chars.preview($('pv-boy'), 'boy'); Chars.preview($('pv-girl'), 'girl'); Chars.whenReady(() => { Chars.preview($('pv-boy'), 'boy'); Chars.preview($('pv-girl'), 'girl'); }); }
 
   // test hook
   window.__land = {

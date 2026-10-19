@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#cfeeff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>سرزمین حرف‌ها</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@500;800&display=swap">
+<style>
+:root {
+  --ink: #3b2a22;
+  --muted: #7a6a5f;
+  --card: #fffaf0;
+  --leaf: #6fae3f;
+  --leaf-dark: #4f8a2a;
+  --sun: #ffc83d;
+  --plum: #8e55b9;
+  --sky: #cfeeff;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--sky);
+  color: var(--ink);
+  font-family: Vazirmatn, Tahoma, "Segoe UI", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+
+.stage {
+  position: fixed;
+  inset: 0;
+  background: var(--sky);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* ---- HUD ---- */
+.hud {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  padding: max(10px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+  direction: ltr;
+}
+.hud[hidden] { display: none; }
+.hud button { pointer-events: auto; }
+
+.coins {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 250, 240, .92);
+  border-radius: 999px;
+  padding: 6px 14px 6px 8px;
+  font-weight: 800;
+  font-size: 1.15rem;
+  min-width: 82px;
+}
+.coin-icon {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff1a8, #ffc83d 55%, #d89a10);
+  box-shadow: inset 0 0 0 2px #e0a010;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border: 3px solid #ffffff;
+  border-radius: 20px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 14px rgba(70, 90, 40, .25);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  direction: rtl;
+}
+.card-letter { font-size: 3rem; font-weight: 800; line-height: 1; color: var(--plum); min-width: 1.1em; text-align: center; }
+.card-side { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 76px; }
+.card-word { font-size: .95rem; font-weight: 800; }
+.card-word mark { background: none; color: var(--plum); }
+.card-emoji { font-size: 1.8rem; line-height: 1; }
+.dots { display: flex; gap: 5px; }
+.dots i { width: 11px; height: 11px; border-radius: 50%; background: #e7dccd; }
+.dots i.on { background: var(--sun); box-shadow: 0 0 0 2px #e0a010 inset; }
+
+.tools { display: flex; flex-direction: column; gap: 6px; }
+.tools button {
+  width: 42px; height: 42px; border-radius: 50%; border: 0;
+  background: rgba(255, 250, 240, .92); font-size: 1.1rem; cursor: pointer;
+}
+
+.banner {
+  position: absolute;
+  inset-inline: 0;
+  top: 22%;
+  text-align: center;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 3px 0 #4f8a2a, 0 6px 18px rgba(0, 0, 0, .35);
+  pointer-events: none;
+  opacity: 0;
+}
+.banner small { display: block; font-size: 1rem; margin-top: 4px; }
+
+/* ---- screens ---- */
+.screen {
+  position: absolute;
+  inset: 0;
+  padding: max(18px, env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px)) max(18px, env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  background: rgba(207, 238, 255, .94);
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+.screen[hidden] { display: none; }
+h1 { margin: 0; font-size: 2.6rem; color: var(--leaf-dark); text-shadow: 0 3px 0 #fff; }
+h2 { margin: 0; font-size: 1.9rem; }
+.sub { margin: 0; line-height: 1.8; color: var(--muted); }
+.hint { margin: 0; font-size: .85rem; color: var(--muted); }
+
+.picks { display: flex; gap: 16px; justify-content: center; }
+.pick {
+  width: 150px;
+  border: 4px solid #fff;
+  border-radius: 24px;
+  background: var(--card);
+  padding: 10px 8px 12px;
+  font: inherit;
+  font-weight: 800;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(70, 90, 40, .25);
+  transition: transform .12s;
+}
+.pick:active, .pick:hover { transform: scale(1.04); }
+.pv { display: block; width: 100%; height: 170px; margin-bottom: 4px; }
+
+button.big, button.ghost {
+  font: inherit;
+  font-weight: 800;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 30px;
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+button.big { background: var(--leaf); color: #fff; box-shadow: 0 4px 0 var(--leaf-dark); }
+button.ghost { background: rgba(255, 255, 255, .8); color: var(--ink); }
+
+.mine { width: min(100%, 420px); background: rgba(255, 250, 240, .85); border-radius: 16px; padding: 8px 12px; }
+.mine summary { cursor: pointer; font-weight: 800; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px; padding-top: 10px; direction: rtl; }
+.grid button {
+  font: inherit; font-weight: 800; font-size: 1.5rem; border: 0; border-radius: 12px; height: 46px;
+  background: #ece3d6; color: #a89a8b; cursor: pointer;
+}
+.grid button.known { background: var(--sun); color: var(--ink); }
+.grid button.new { background: #fff; color: var(--ink); box-shadow: 0 0 0 2px var(--sun) inset; }
+
+.result { display: flex; gap: 10px; }
+.result div { background: var(--card); border-radius: 16px; padding: 8px 14px; display: flex; flex-direction: column; min-width: 78px; }
+.result span { font-size: .75rem; color: var(--muted); }
+.result b { font-size: 1.4rem; }
+.learned { margin: 0; line-height: 1.8; min-height: 1.8em; }
+
+#err {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 99; margin: 0; padding: 8px 10px;
+  background: #fff0f0; color: #b00020; font: 12px/1.5 monospace; white-space: pre-wrap; direction: ltr; text-align: left;
+}
+#err[hidden] { display: none; }
+
+</style>
+</head>
+<body>
+  <pre id="err" hidden></pre>
+  <script>
+    // shows any startup error on screen so a broken phone can be diagnosed from a screenshot
+    (function () {
+      function show(msg) { var p = document.getElementById('err'); if (!p) return; p.hidden = false; p.textContent += msg + '\n'; }
+      window.addEventListener('error', function (e) { show((e.message || 'error') + ' @' + String(e.filename || '').split('/').pop() + ':' + (e.lineno || 0)); });
+      window.addEventListener('unhandledrejection', function (e) { show('promise: ' + (e.reason && e.reason.message || e.reason)); });
+      setTimeout(function () { if (!window.__land) show('بازی بارگذاری نشد (JS اجرا نشد)'); }, 2500);
+    })();
+  </script>
+  <main class="stage" id="stage" dir="rtl" lang="fa">
+    <canvas id="cv"></canvas>
+
+    <div class="hud" id="hud" hidden>
+      <div class="coins"><span class="coin-icon"></span><b id="coins">۰</b></div>
+      <button class="card" id="card" type="button" aria-label="بشنو">
+        <span class="card-letter" id="cl">ب</span>
+        <span class="card-side">
+          <span class="card-word" id="cw"></span>
+          <span class="dots" id="cd"></span>
+        </span>
+        <span class="card-emoji" id="ce"></span>
+      </button>
+      <div class="tools">
+        <button id="btnSound" type="button" aria-label="صدا">🔊</button>
+        <button id="btnPause" type="button" aria-label="مکث">⏸</button>
+      </div>
+    </div>
+
+    <div class="banner" id="banner"></div>
+
+    <section class="screen" id="menu">
+      <h1>سرزمین حرف‌ها</h1>
+      <p class="sub">یکی رو انتخاب کن تا بدوه!<br>اون یکی خودش دنبالش میاد</p>
+      <div class="picks">
+        <button class="pick" data-kind="boy" type="button"><canvas class="pv" id="pv-boy"></canvas><span id="name-boy">آزاد</span></button>
+        <button class="pick" data-kind="girl" type="button"><canvas class="pv" id="pv-girl"></canvas><span id="name-girl">رها</span></button>
+      </div>
+      <p class="hint">لمس صفحه یا فاصله = پرش (دوبار هم می‌شه)</p>
+      <details class="mine">
+        <summary>حرف‌های من <b id="learnedCount">۰</b> از ۳۳</summary>
+        <div class="grid" id="grid"></div>
+      </details>
+    </section>
+
+    <section class="screen" id="pause" hidden>
+      <h2>مکث</h2>
+      <button class="big" id="btnResume" type="button">ادامه</button>
+      <button class="ghost" id="btnMenu" type="button">منوی اصلی</button>
+    </section>
+
+    <section class="screen" id="over" hidden>
+      <h2 id="overTitle">آخ! به هم خوردیم</h2>
+      <div class="result">
+        <div><span>سکه</span><b id="rCoins">۰</b></div>
+        <div><span>حرف درست</span><b id="rOk">۰</b></div>
+        <div><span>مسافت</span><b id="rDist">۰</b></div>
+      </div>
+      <p class="learned" id="rLearned"></p>
+      <button class="big" id="btnAgain" type="button">دوباره بدویم</button>
+      <button class="ghost" id="btnMenu2" type="button">انتخاب شخصیت</button>
+    </section>
+  </main>
+
+  
+<script>
+/*
+ * Persian letters used by Letter Land.
+ * `ORDER` is the order in which letters are introduced: change it to follow the school book.
+ * `word` should contain the letter (the letter is highlighted inside it on screen).
+ */
+(function (root) {
+  'use strict';
+
+  const LETTERS = [
+    { ch: 'آ', word: 'آب', emoji: '💧' },
+    { ch: 'ا', word: 'اسب', emoji: '🐴' },
+    { ch: 'ب', word: 'بادکنک', emoji: '🎈' },
+    { ch: 'پ', word: 'پروانه', emoji: '🦋' },
+    { ch: 'ت', word: 'توپ', emoji: '⚽' },
+    { ch: 'ث', word: 'مثلث', emoji: '🔺' },
+    { ch: 'ج', word: 'جوجه', emoji: '🐥' },
+    { ch: 'چ', word: 'چتر', emoji: '☂️' },
+    { ch: 'ح', word: 'حلزون', emoji: '🐌' },
+    { ch: 'خ', word: 'خرگوش', emoji: '🐰' },
+    { ch: 'د', word: 'درخت', emoji: '🌳' },
+    { ch: 'ذ', word: 'ذرت', emoji: '🌽' },
+    { ch: 'ر', word: 'رنگین‌کمان', emoji: '🌈' },
+    { ch: 'ز', word: 'زرافه', emoji: '🦒' },
+    { ch: 'ژ', word: 'ژاکت', emoji: '🧥' },
+    { ch: 'س', word: 'سیب', emoji: '🍎' },
+    { ch: 'ش', word: 'شیر', emoji: '🦁' },
+    { ch: 'ص', word: 'صابون', emoji: '🧼' },
+    { ch: 'ض', word: 'ضربدر', emoji: '✖️' },
+    { ch: 'ط', word: 'طوطی', emoji: '🦜' },
+    { ch: 'ظ', word: 'ظرف', emoji: '🍽️' },
+    { ch: 'ع', word: 'عینک', emoji: '👓' },
+    { ch: 'غ', word: 'غذا', emoji: '🍲' },
+    { ch: 'ف', word: 'فیل', emoji: '🐘' },
+    { ch: 'ق', word: 'قایق', emoji: '⛵' },
+    { ch: 'ک', word: 'کتاب', emoji: '📖' },
+    { ch: 'گ', word: 'گل', emoji: '🌸' },
+    { ch: 'ل', word: 'لیمو', emoji: '🍋' },
+    { ch: 'م', word: 'ماهی', emoji: '🐟' },
+    { ch: 'ن', word: 'نان', emoji: '🍞' },
+    { ch: 'و', word: 'ویولن', emoji: '🎻' },
+    { ch: 'ه', word: 'هلو', emoji: '🍑' },
+    { ch: 'ی', word: 'یخ', emoji: '🧊' },
+  ];
+
+  // letters that look alike: they make the best wrong answers
+  const SIMILAR = [
+    ['آ', 'ا'], ['ب', 'پ', 'ت', 'ث', 'ن', 'ی'], ['ج', 'چ', 'ح', 'خ'], ['د', 'ذ'], ['ر', 'ز', 'ژ'],
+    ['س', 'ش'], ['ص', 'ض'], ['ط', 'ظ'], ['ع', 'غ'], ['ف', 'ق'], ['ک', 'گ'],
+  ];
+
+  const api = { LETTERS, SIMILAR };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.LetterData = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/*
+ * What should the child practise next?
+ * The pool of letters starts small and grows as targets are mastered.
+ * Letters the child gets wrong more often come up more often.
+ */
+(function (root) {
+  'use strict';
+
+  const KEY = 'letterland.learn';
+
+  function createLearner(opts) {
+    const letters = opts.letters;
+    const similar = opts.similar || [];
+    const rng = opts.rng || Math.random;
+    const storage = opts.storage || null;
+    const need = opts.need || 3; // correct pickups to master a target
+    const data = { unlocked: opts.startUnlocked || 3, done: 0, stats: {} };
+    try {
+      const raw = storage && storage.getItem(KEY);
+      if (raw) Object.assign(data, JSON.parse(raw));
+    } catch (e) { /* ignore */ }
+
+    let target = null;
+    let progress = 0;
+
+    const save = () => { try { if (storage) storage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* ignore */ } };
+    const stat = (ch) => data.stats[ch] || (data.stats[ch] = { ok: 0, bad: 0 });
+    const pool = () => letters.slice(0, Math.min(data.unlocked, letters.length));
+
+    function weightedPick(items, weightOf) {
+      const ws = items.map(weightOf);
+      let x = rng() * ws.reduce((a, b) => a + b, 0);
+      for (let i = 0; i < items.length; i++) { x -= ws[i]; if (x <= 0) return i; }
+      return items.length - 1;
+    }
+
+    function pickTarget() {
+      let cands = pool().filter((l) => !target || l.ch !== target.ch);
+      if (!cands.length) cands = pool();
+      const i = weightedPick(cands, (l) => { const s = stat(l.ch); return 1 / (1 + s.ok) + 0.4 * Math.min(s.bad, 5); });
+      target = cands[i];
+      progress = 0;
+      return target;
+    }
+
+    // wrong answers for a gate: prefer letters that look like the target
+    function distractors(n) {
+      const group = similar.find((g) => g.includes(target.ch)) || [];
+      let cands = pool().filter((l) => l.ch !== target.ch);
+      if (cands.length < n) { // early on the pool is tiny: borrow the next letters
+        const extra = letters.filter((l) => l.ch !== target.ch && !cands.includes(l));
+        cands = cands.concat(extra.slice(0, n - cands.length + 2));
+      }
+      const out = [];
+      while (out.length < n && cands.length) {
+        const i = weightedPick(cands, (l) => (group.includes(l.ch) ? 3 : 1));
+        out.push(cands.splice(i, 1)[0].ch);
+      }
+      return out;
+    }
+
+    function correct(ch) {
+      stat(ch).ok++;
+      progress++;
+      if (progress >= need) {
+        data.done++;
+        if (data.done % 2 === 0 && data.unlocked < letters.length) data.unlocked++;
+        save();
+        return { mastered: true, progress };
+      }
+      save();
+      return { mastered: false, progress };
+    }
+
+    function wrong(pickedCh) {
+      if (target) stat(target.ch).bad++;
+      stat(pickedCh);
+      save();
+    }
+
+    const learned = () => letters.filter((l) => stat(l.ch).ok >= need).map((l) => l.ch);
+    function reset() { data.unlocked = opts.startUnlocked || 3; data.done = 0; data.stats = {}; save(); }
+
+    return {
+      pool, pickTarget, distractors, correct, wrong, learned, reset, save,
+      get target() { return target; },
+      get progress() { return progress; },
+      get need() { return need; },
+      get unlocked() { return data.unlocked; },
+      stat,
+    };
+  }
+
+  const api = { createLearner };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.LetterLearn = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/*
+ * What appears on the road. Patterns are built so that a child can always get through:
+ * obstacles are far enough apart for a jump, and letter gates have no obstacles in them.
+ * Item positions: dx = distance from the start of the pattern, h = height above the ground.
+ */
+(function (root) {
+  'use strict';
+
+  const OBSTACLES = {
+    rock: { w: 54, h: 40 },
+    log: { w: 66, h: 38 },
+    bush: { w: 64, h: 54 },
+    basket: { w: 56, h: 50 },
+  };
+  const OBSTACLE_KINDS = Object.keys(OBSTACLES);
+  const LOW = 55;   // reached by just running
+  const HIGH = 175; // needs a jump
+  const LETTER_SPACING = 120;
+
+  function createSpawner(opts) {
+    const rng = (opts && opts.rng) || Math.random;
+    let sinceGate = 0;
+    let count = 0;
+
+    const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+    const obstacle = (dx) => { const kind = pick(OBSTACLE_KINDS); return Object.assign({ t: 'obs', dx, kind }, OBSTACLES[kind]); };
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+      return a;
+    }
+
+    // ctx: { speed, dist, target, distractors }
+    function next(ctx) {
+      const air = ctx.speed * 0.72; // how far a jump carries
+      let kind;
+      if (count === 0) kind = 'coins';
+      else if (sinceGate >= 3 || (count === 2 && sinceGate >= 1)) kind = 'gate';
+      else {
+        const bag = ['coins', 'arc', 'arc', 'single', 'single'];
+        if (ctx.dist > 1200) bag.push('double');
+        kind = pick(bag);
+      }
+      count++;
+      sinceGate = kind === 'gate' ? 0 : sinceGate + 1;
+      const items = [];
+      let len;
+
+      if (kind === 'coins') {
+        const n = 5 + Math.floor(rng() * 4);
+        for (let i = 0; i < n; i++) items.push({ t: 'coin', dx: 40 + i * 46, h: 45 });
+        len = 40 + n * 46 + 160;
+      } else if (kind === 'single') {
+        const o = obstacle(120);
+        items.push(o);
+        for (let i = 0; i < 3; i++) items.push({ t: 'coin', dx: 120 + o.w + 60 + i * 46, h: 45 });
+        len = 120 + o.w + 60 + 3 * 46 + air * 0.6 + 120;
+      } else if (kind === 'arc') {
+        const o = obstacle(110);
+        const cx = 110;
+        const step = Math.max(40, air * 0.2);
+        for (let i = -2; i <= 2; i++) {
+          items.push({ t: 'coin', dx: cx + i * step, h: o.h + 22 + 62 * (1 - (i / 2) * (i / 2)) });
+        }
+        items.push(o);
+        len = 110 + o.w / 2 + 2 * step + air * 0.5 + 140;
+      } else if (kind === 'double') {
+        const a = obstacle(110);
+        const gap = Math.max(260, air * 1.15 + 40);
+        const b = obstacle(110 + a.w / 2 + gap + 0);
+        b.dx = a.dx + a.w / 2 + gap + b.w / 2;
+        items.push(a, b);
+        for (let i = 0; i < 3; i++) items.push({ t: 'coin', dx: a.dx + a.w / 2 + gap / 2 - 46 + i * 46, h: 45 });
+        len = b.dx + b.w / 2 + air * 0.6 + 140;
+      } else { // gate: the target among wrong letters, no obstacles
+        const letters = shuffle([ctx.target].concat(ctx.distractors.slice(0, 2)));
+        let heights = letters.map(() => (rng() < 0.5 ? LOW : HIGH));
+        if (heights.every((h) => h === heights[0])) heights[Math.floor(rng() * heights.length)] = heights[0] === LOW ? HIGH : LOW;
+        letters.forEach((ch, i) => items.push({ t: 'letter', dx: 80 + i * LETTER_SPACING, h: heights[i], ch }));
+        len = 80 + (letters.length - 1) * LETTER_SPACING + 220;
+      }
+      return { kind, items, len };
+    }
+
+    return { next, get sinceGate() { return sinceGate; } };
+  }
+
+  const api = { createSpawner, OBSTACLES, LOW, HIGH, LETTER_SPACING };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.LetterSpawn = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/*
+ * The two book characters, drawn with canvas paths (front facing, like in the book):
+ *   boy  : round bald head, slim black body, long thin legs
+ *   girl : black bob, black top, long purple dress
+ * To use the real illustrations instead, give Chars.sprites.boy / .girl an <img> (transparent PNG, feet at the bottom).
+ */
+(function (root) {
+  'use strict';
+
+  const SKIN = '#f2c8a0', SKIN_SHADE = '#e3ae82';
+  const BLACK = '#1f1b21', BLACK_LIGHT = '#3b353e';
+  const PURPLE = '#9158bd', PURPLE_DARK = '#7843a3';
+  const sprites = { boy: null, girl: null };
+
+  function limb(ctx, x1, y1, x2, y2, w, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  function face(ctx, kind, hurt, happy) {
+    // eyes
+    for (const s of [-1, 1]) {
+      ctx.fillStyle = BLACK;
+      ctx.beginPath();
+      if (hurt) { ctx.ellipse(s * 11, -1, 4.4, 5.8, 0, 0, Math.PI * 2); } else { ctx.ellipse(s * 11, -1, 3.2, 4.4, 0, 0, Math.PI * 2); }
+      ctx.fill();
+      if (hurt) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * 11 + 1, -3, 1.6, 0, Math.PI * 2); ctx.fill(); }
+      // brows
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      const by = hurt ? -15 : -11;
+      ctx.moveTo(s * 16, by + 1);
+      ctx.quadraticCurveTo(s * 11, by - 5, s * 6, by - 1);
+      ctx.stroke();
+      if (kind === 'girl') { // lashes
+        ctx.beginPath();
+        ctx.moveTo(s * 14, -4); ctx.lineTo(s * 18.5, -7);
+        ctx.moveTo(s * 14.5, -1); ctx.lineTo(s * 19.5, -2);
+        ctx.stroke();
+      }
+    }
+    // mouth
+    ctx.strokeStyle = BLACK;
+    ctx.lineWidth = 2.8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (hurt) { ctx.arc(0, 13, 4.5, 0, Math.PI * 2); }
+    else if (happy) { ctx.moveTo(-12, 7); ctx.quadraticCurveTo(0, 24, 12, 7); }
+    else { ctx.moveTo(-11, 8); ctx.quadraticCurveTo(0, 19, 11, 8); }
+    ctx.stroke();
+  }
+
+  /*
+   * o: { x, footY, scale, t (seconds), air, hurt (bool), happy (bool), rot, alpha }
+   */
+  function draw(ctx, kind, o) {
+    const img = sprites[kind];
+    const s = o.scale || 1;
+    const run = !o.air && !o.still;
+    const ph = (o.t || 0) * 11;
+    ctx.save();
+    ctx.translate(o.x, o.footY);
+    if (o.rot) ctx.rotate(o.rot);
+    ctx.scale(s, s);
+    if (o.alpha !== undefined) ctx.globalAlpha = o.alpha;
+
+    if (img && img.complete && img.naturalWidth) {
+      const h = 135, w = h * img.naturalWidth / img.naturalHeight;
+      const bob = run ? -Math.abs(Math.sin(ph)) * 4 : 0;
+      ctx.drawImage(img, -w / 2, -h + bob, w, h);
+      ctx.restore();
+      return;
+    }
+
+    const legL = 40, torsoH = 34, headR = 30;
+    const bob = run ? -Math.abs(Math.sin(ph)) * 3.5 : 0;
+    const hipY = -legL + bob;
+    const shY = hipY - torsoH;
+    const headY = shY - headR + 5;
+    const swing = run ? Math.sin(ph) : 0;
+
+    // legs
+    const legAng = [o.air ? 0.85 : swing * 0.8, o.air ? -0.45 : -swing * 0.8];
+    const feet = [];
+    legAng.forEach((a, i) => {
+      const hx = i ? 6 : -6;
+      const fx = hx + Math.sin(a) * legL;
+      const fy = hipY + Math.cos(a) * legL - (run ? Math.max(0, Math.sin(ph + (i ? Math.PI : 0))) * 5 : 0);
+      feet.push([fx, Math.min(fy, 0)]);
+      if (kind === 'boy') limb(ctx, hx, hipY, fx, fy, 8, BLACK);
+    });
+
+    // arms (behind torso)
+    const armAng = o.air ? [2.5, -2.5] : [swing * 0.9, -swing * 0.9];
+    const arms = [-1, 1].map((side, i) => {
+      const sx = side * 14, sy = shY + 7;
+      const a = armAng[i];
+      const ex = sx + side * Math.abs(Math.sin(a)) * 3 + Math.sin(a) * 0;
+      return { sx, sy, hx: sx + (o.air ? side * 14 : Math.sin(a) * 12), hy: sy + (o.air ? -22 : Math.cos(a) * 26) , ex };
+    });
+
+    if (kind === 'girl') {
+      // dress and shoes
+      const sway = run ? swing * 4 : 0;
+      const grad = ctx.createLinearGradient(0, hipY, 0, -4);
+      grad.addColorStop(0, PURPLE);
+      grad.addColorStop(1, PURPLE_DARK);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(-13, hipY - 6);
+      ctx.lineTo(13, hipY - 6);
+      ctx.lineTo(27 + sway, -7);
+      ctx.quadraticCurveTo(sway * 0.5, 0, -27 + sway, -7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = BLACK;
+      feet.forEach(([fx, fy]) => { ctx.beginPath(); ctx.ellipse(fx * 0.55 + (fx < 0 ? -2 : 2), Math.max(fy, -6), 8.5, 5, 0, 0, Math.PI * 2); ctx.fill(); });
+    } else {
+      ctx.fillStyle = BLACK;
+      feet.forEach(([fx, fy]) => { ctx.beginPath(); ctx.ellipse(fx + 1.5, fy, 9, 5, 0, 0, Math.PI * 2); ctx.fill(); });
+    }
+
+    // torso
+    ctx.fillStyle = BLACK;
+    ctx.beginPath();
+    const tr = 12;
+    ctx.moveTo(-14 + tr, shY);
+    ctx.lineTo(14 - tr, shY);
+    ctx.quadraticCurveTo(14, shY, 14, shY + tr);
+    ctx.lineTo(kind === 'girl' ? 12 : 11, hipY);
+    ctx.lineTo(kind === 'girl' ? -12 : -11, hipY);
+    ctx.lineTo(-14, shY + tr);
+    ctx.quadraticCurveTo(-14, shY, -14 + tr, shY);
+    ctx.fill();
+    ctx.fillStyle = BLACK_LIGHT;
+    ctx.fillRect(-1, shY + 6, 2, hipY - shY - 10);
+
+    // arms
+    arms.forEach((a) => {
+      limb(ctx, a.sx, a.sy, a.hx, a.hy, 7.5, BLACK);
+      ctx.fillStyle = BLACK;
+      ctx.beginPath(); ctx.arc(a.hx, a.hy, 5.5, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // head
+    ctx.save();
+    ctx.translate(0, headY);
+    ctx.rotate(o.rot ? 0 : (run ? swing * 0.04 : 0));
+    if (kind === 'girl') { // back hair of the bob
+      ctx.fillStyle = BLACK;
+      ctx.beginPath();
+      ctx.ellipse(0, 6, headR + 5, headR + 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const g = ctx.createRadialGradient(-8, -10, 4, 0, 0, headR + 2);
+    g.addColorStop(0, '#f8d9b6');
+    g.addColorStop(1, SKIN_SHADE);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, headR, 0, Math.PI * 2);
+    ctx.fill();
+    if (kind === 'girl') { // fringe
+      ctx.fillStyle = BLACK;
+      ctx.beginPath();
+      ctx.moveTo(-headR - 4, 4);
+      ctx.bezierCurveTo(-headR - 6, -headR - 10, headR + 6, -headR - 10, headR + 4, 4);
+      ctx.quadraticCurveTo(headR - 2, -8, headR * 0.35, -15);
+      ctx.quadraticCurveTo(-headR * 0.3, -2, -headR * 0.95, -4);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,.35)';
+      ctx.beginPath();
+      ctx.ellipse(-12, -16, 7, 4, -0.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    face(ctx, kind, !!o.hurt, !!o.happy);
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function preview(canvas, kind) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = canvas.clientWidth || 120, h = canvas.clientHeight || 170;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    draw(ctx, kind, { x: w / 2, footY: h - 10, scale: Math.min(h / 150, w / 80), still: true, happy: true });
+  }
+
+  const api = { draw, preview, sprites };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.LetterChars = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const LD = window.LetterData, Learn = window.LetterLearn, Spawn = window.LetterSpawn, Chars = window.LetterChars;
+
+  /* ---------- config ---------- */
+
+  const H = 640;              // logical height of the world
+  const GROUND = 488;         // y of the ground line
+  const GRAV = 2300;
+  const JUMP_V = 800;
+  const JUMP2_V = 660;
+  const GAP_MAX = 108;        // distance between the two characters (their "health")
+  const GAP_START = 100;
+  const GAP_MIN = 24;         // closer than this = they bump into each other = game over
+  const GAP_HIT = 42;
+  const HISTORY = 2.2;        // seconds of the leader's path the follower can replay
+  const CHARACTERS = { boy: { name: 'آزاد' }, girl: { name: 'رها' } };
+  const GROUP_COLORS = ['#ff8f70', '#5fb3e8', '#7bc65a', '#ffb62e', '#b681e0', '#ee7aa6'];
+
+  const $ = (id) => document.getElementById(id);
+  const fa = (n) => String(n).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  function mulberry(seed) {
+    let a = seed >>> 0;
+    return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('letterland.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('letterland.' + k, JSON.stringify(v)); } catch (e) { /* ignore */ } },
+  };
+  const rawStorage = (function () { try { return window.localStorage; } catch (e) { return null; } })();
+
+  /* ---------- sound & speech ---------- */
+
+  const Audio_ = (function () {
+    let ctx = null, master = null;
+    let on = store.get('sound', true);
+    function ac() {
+      if (!on) return null;
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        try { ctx = new AC(); master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination); } catch (e) { ctx = null; return null; }
+      }
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      return ctx;
+    }
+    function tone(type, f0, f1, t, dur, vol) {
+      const c = ctx; const o = c.createOscillator(); const g = c.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(f0, t);
+      o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05);
+    }
+    const play = (fn) => () => { const c = ac(); if (c) fn(c.currentTime); };
+    return {
+      get on() { return on; },
+      toggle() { on = !on; store.set('sound', on); if (on) ac(); else try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) { /* ignore */ } return on; },
+      unlock() { ac(); },
+      jump: play((t) => tone('sine', 300, 620, t, 0.14, 0.22)),
+      jump2: play((t) => tone('sine', 420, 820, t, 0.12, 0.2)),
+      coin: play((t) => { tone('square', 988, 988, t, 0.07, 0.1); tone('square', 1318, 1318, t + 0.07, 0.16, 0.1); }),
+      good: play((t) => { [523, 659, 784, 1046].forEach((f, i) => tone('triangle', f, f * 1.003, t + i * 0.08, 0.3, 0.25)); }),
+      bad: play((t) => tone('sine', 280, 170, t, 0.28, 0.25)),
+      hit: play((t) => { tone('sawtooth', 180, 60, t, 0.25, 0.22); }),
+      over: play((t) => { [392, 330, 262].forEach((f, i) => tone('triangle', f, f * 0.98, t + i * 0.16, 0.3, 0.25)); }),
+      cheer: play((t) => { [523, 659, 784, 1046, 1318, 1568].forEach((f, i) => tone('triangle', f, f * 1.003, t + i * 0.07, 0.4, 0.22)); }),
+    };
+  })();
+
+  let faVoice = null;
+  function findVoice() {
+    try {
+      const vs = window.speechSynthesis.getVoices() || [];
+      faVoice = vs.find((v) => /^fa/i.test(v.lang)) || null;
+    } catch (e) { faVoice = null; }
+  }
+  try { if (window.speechSynthesis) { findVoice(); window.speechSynthesis.addEventListener('voiceschanged', findVoice); } } catch (e) { /* ignore */ }
+  // speaks only when the device has a Persian voice; an English voice would mispronounce the letters
+  function speak(text) {
+    if (!Audio_.on || !window.speechSynthesis || !faVoice) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.voice = faVoice; u.lang = faVoice.lang; u.rate = 0.85; u.pitch = 1.1;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- stage & canvas ---------- */
+
+  const stage = $('stage'), cv = $('cv'), ctx = cv.getContext('2d');
+  let W = 360, scale = 1;
+
+  function resize() {
+    const r = stage.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.round(r.width * dpr);
+    cv.height = Math.round(r.height * dpr);
+    scale = r.height / H;
+    W = r.width / scale;
+    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+  }
+
+  /* ---------- scenery (drawn from seeded random layouts) ---------- */
+
+  const TW = 900;
+  const sr = mulberry(11);
+  const GREENS = ['#7fbf4d', '#6aae3d', '#8ccb5a', '#5e9e36'];
+  const clouds = Array.from({ length: 4 }, (_, i) => ({ x: i * 225 + sr() * 70, y: 70 + sr() * 120, s: 0.7 + sr() * 0.6 }));
+  const trees = [];
+  for (let x = 30; x < TW; x += 120 + sr() * 80) trees.push({ x, h: 120 + sr() * 70, r: 44 + sr() * 22, c: sr() < 0.22 ? '#e9c84a' : GREENS[Math.floor(sr() * GREENS.length)] });
+  const stones = [];
+  for (let row = 0; row < 2; row++) {
+    let x = -row * 30;
+    while (x < TW) { const w = 46 + sr() * 26; stones.push({ x, row, w, c: ['#b9b4a6', '#a8a496', '#c7c2b3', '#b2ad9d'][Math.floor(sr() * 4)] }); x += w + 3; }
+  }
+  const bushes = [];
+  for (let x = 0; x < TW; x += 38 + sr() * 30) bushes.push({ x, r: 20 + sr() * 14, c: GREENS[Math.floor(sr() * GREENS.length)], flower: sr() < 0.5 ? pick(['#ffffff', '#ffe066', '#ff9ec4']) : null });
+  const tufts = [];
+  for (let x = 0; x < TW; x += 26 + sr() * 40) tufts.push({ x, y: 14 + sr() * 70, flower: sr() < 0.35 ? pick(['#ffffff', '#ffe066', '#ff9ec4']) : null });
+
+  function tiled(offset, fn) {
+    const start = -(((offset % TW) + TW) % TW);
+    for (let ox = start; ox < W + 40; ox += TW) fn(ox);
+  }
+
+  function drawScenery(dist) {
+    const sky = ctx.createLinearGradient(0, 0, 0, GROUND);
+    sky.addColorStop(0, '#bfe7ff');
+    sky.addColorStop(1, '#eaf8ff');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    tiled(dist * 0.06, (ox) => clouds.forEach((c) => {
+      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      const x = ox + c.x, y = c.y;
+      ctx.beginPath();
+      ctx.arc(x, y, 22 * c.s, 0, 7); ctx.arc(x + 24 * c.s, y - 8 * c.s, 28 * c.s, 0, 7); ctx.arc(x + 52 * c.s, y, 20 * c.s, 0, 7);
+      ctx.fill();
+    }));
+
+    tiled(dist * 0.2, (ox) => trees.forEach((t) => {
+      const x = ox + t.x, base = GROUND - 90;
+      ctx.fillStyle = '#9a7650';
+      ctx.fillRect(x - 7, base - t.h, 14, t.h);
+      ctx.fillStyle = t.c;
+      ctx.beginPath();
+      ctx.arc(x, base - t.h - 6, t.r, 0, 7); ctx.arc(x - t.r * 0.7, base - t.h + 10, t.r * 0.7, 0, 7); ctx.arc(x + t.r * 0.7, base - t.h + 10, t.r * 0.7, 0, 7);
+      ctx.fill();
+    }));
+
+    // stone wall
+    const wallTop = GROUND - 104;
+    ctx.fillStyle = '#8f8b7e';
+    ctx.fillRect(0, wallTop, W, 78);
+    tiled(dist * 0.5, (ox) => stones.forEach((s) => {
+      ctx.fillStyle = s.c;
+      const y = wallTop + 2 + s.row * 38;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(ox + s.x, y, s.w, 34, 9); else ctx.rect(ox + s.x, y, s.w, 34);
+      ctx.fill();
+    }));
+
+    tiled(dist * 0.7, (ox) => bushes.forEach((b) => {
+      ctx.fillStyle = b.c;
+      ctx.beginPath(); ctx.arc(ox + b.x, GROUND - 30, b.r, 0, 7); ctx.fill();
+      if (b.flower) { ctx.fillStyle = b.flower; ctx.beginPath(); ctx.arc(ox + b.x + 5, GROUND - 36 - b.r * 0.3, 3.5, 0, 7); ctx.fill(); }
+    }));
+
+    // ground
+    const gr = ctx.createLinearGradient(0, GROUND - 30, 0, H);
+    gr.addColorStop(0, '#93cc5c');
+    gr.addColorStop(1, '#6fae3f');
+    ctx.fillStyle = gr;
+    ctx.fillRect(0, GROUND - 30, W, H - GROUND + 30);
+    ctx.fillStyle = 'rgba(255,255,255,.22)';
+    ctx.fillRect(0, GROUND - 4, W, 60);
+    tiled(dist, (ox) => tufts.forEach((t) => {
+      const x = ox + t.x, y = GROUND + 8 + t.y;
+      ctx.strokeStyle = '#5e9e36';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x - 5, y); ctx.lineTo(x - 7, y - 9); ctx.moveTo(x, y); ctx.lineTo(x, y - 12); ctx.moveTo(x + 5, y); ctx.lineTo(x + 7, y - 9); ctx.stroke();
+      if (t.flower) { ctx.fillStyle = t.flower; ctx.beginPath(); ctx.arc(x, y - 14, 4, 0, 7); ctx.fill(); ctx.fillStyle = '#f6b500'; ctx.beginPath(); ctx.arc(x, y - 14, 1.6, 0, 7); ctx.fill(); }
+    }));
+  }
+
+  /* ---------- things on the road ---------- */
+
+  function rr(x, y, w, h, r) { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
+
+  function drawObstacle(e) {
+    const x = e.x, y = GROUND;
+    ctx.save();
+    ctx.fillStyle = 'rgba(40,60,20,.18)';
+    ctx.beginPath(); ctx.ellipse(x, y, e.w * 0.6, 7, 0, 0, 7); ctx.fill();
+    if (e.kind === 'rock') {
+      ctx.fillStyle = '#9b9a97';
+      ctx.beginPath(); ctx.moveTo(x - 27, y); ctx.quadraticCurveTo(x - 30, y - 34, x - 6, y - 40); ctx.quadraticCurveTo(x + 26, y - 42, x + 28, y); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.28)';
+      ctx.beginPath(); ctx.ellipse(x - 8, y - 28, 9, 5, -0.5, 0, 7); ctx.fill();
+    } else if (e.kind === 'log') {
+      ctx.fillStyle = '#9a6a3d'; rr(x - 33, y - 36, 66, 36, 12); ctx.fill();
+      ctx.fillStyle = '#c99763'; ctx.beginPath(); ctx.ellipse(x + 26, y - 18, 9, 17, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#9a6a3d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x + 26, y - 18, 4, 9, 0, 0, 7); ctx.stroke();
+    } else if (e.kind === 'bush') {
+      ctx.fillStyle = '#4f9a30';
+      ctx.beginPath(); ctx.arc(x - 18, y - 22, 22, 0, 7); ctx.arc(x + 4, y - 32, 26, 0, 7); ctx.arc(x + 22, y - 20, 21, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ff7a8a';
+      [[-12, -30], [10, -40], [24, -22], [-2, -18]].forEach(([dx, dy]) => { ctx.beginPath(); ctx.arc(x + dx, y + dy, 3.5, 0, 7); ctx.fill(); });
+    } else { // picnic basket with a book, like in the picture
+      ctx.fillStyle = '#4aa0dc'; ctx.save(); ctx.translate(x - 4, y - 42); ctx.rotate(-0.12); rr(-14, -14, 30, 34, 3); ctx.fill();
+      ctx.fillStyle = '#ffd24d'; ctx.fillRect(-10, -4, 22, 8); ctx.restore();
+      ctx.fillStyle = '#c48a4a';
+      ctx.beginPath(); ctx.moveTo(x - 28, y - 36); ctx.lineTo(x + 28, y - 36); ctx.lineTo(x + 22, y); ctx.lineTo(x - 22, y); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#a06c32'; ctx.lineWidth = 2;
+      for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(x + i * 8, y - 36); ctx.lineTo(x + i * 7, y); ctx.stroke(); }
+      for (let j = 1; j < 4; j++) { ctx.beginPath(); ctx.moveTo(x - 26 + j, y - j * 9); ctx.lineTo(x + 26 - j, y - j * 9); ctx.stroke(); }
+      ctx.strokeStyle = '#a06c32'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y - 36, 24, Math.PI, 0); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawCoin(e, t) {
+    const y = GROUND - e.h + Math.sin(t * 4 + e.x * 0.02) * 2;
+    const sx = Math.max(0.28, Math.abs(Math.cos(t * 3.5 + e.x * 0.03)));
+    ctx.save();
+    ctx.translate(e.x, y);
+    ctx.scale(sx, 1);
+    const g = ctx.createRadialGradient(-4, -4, 2, 0, 0, 14);
+    g.addColorStop(0, '#fff3b0'); g.addColorStop(0.6, '#ffc83d'); g.addColorStop(1, '#d99a0b');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, 13, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#c98a05'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, 9, 0, 7); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawLetter(e, t) {
+    const y = GROUND - e.h + Math.sin(t * 2.6 + e.x * 0.01) * 4;
+    ctx.save();
+    ctx.translate(e.x, y);
+    ctx.shadowColor = 'rgba(40,60,20,.3)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
+    ctx.fillStyle = '#fffaf0';
+    ctx.beginPath(); ctx.arc(0, 0, 30, 0, 7); ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = GROUP_COLORS[e.color % GROUP_COLORS.length];
+    ctx.stroke();
+    ctx.fillStyle = '#3b2a22';
+    ctx.font = '800 38px Vazirmatn, Tahoma, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(e.ch, 0, 3);
+    ctx.restore();
+  }
+
+  /* ---------- game state ---------- */
+
+  const learner = Learn.createLearner({ letters: LD.LETTERS, similar: LD.SIMILAR, storage: rawStorage });
+  let spawner = Spawn.createSpawner({});
+  const colorOf = (ch) => LD.LETTERS.findIndex((l) => l.ch === ch);
+
+  let G = null;          // the run in progress
+  let mode = 'menu';     // menu | play | pause | over
+  let last = 0;
+  let selected = store.get('char', 'boy');
+
+  const leaderX = () => clamp(W * 0.5, 176, 300);
+
+  function newRun(kind) {
+    selected = kind;
+    store.set('char', kind);
+    spawner = Spawn.createSpawner({});
+    G = {
+      kind, other: kind === 'boy' ? 'girl' : 'boy',
+      dist: 0, time: 0, speed: 200, coins: 0, ok: 0, bad: 0,
+      y: 0, vy: 0, jumps: 0, hist: [], gap: GAP_START, invuln: 0, hurt: 0, slow: 0, shake: 0,
+      entities: [], parts: [], spawnIn: 260, anim: 0, flash: 0,
+      overT: 0, learnedNow: new Set(), caught: false, cheer: 0,
+    };
+    newTarget(true);
+    $('coins').textContent = fa(0);
+    setMode('play');
+  }
+
+  function setMode(m) {
+    mode = m;
+    $('menu').hidden = m !== 'menu';
+    $('pause').hidden = m !== 'pause';
+    $('over').hidden = m !== 'over';
+    $('hud').hidden = !(m === 'play' || m === 'pause');
+  }
+
+  function renderCard() {
+    const t = learner.target;
+    $('cl').textContent = t.ch;
+    $('ce').textContent = t.emoji;
+    const w = t.word, i = w.indexOf(t.ch);
+    $('cw').innerHTML = i < 0 ? w : `${w.slice(0, i)}<mark>${t.ch}</mark>${w.slice(i + 1)}`;
+    $('cd').innerHTML = Array.from({ length: learner.need }, (_, k) => `<i class="${k < learner.progress ? 'on' : ''}"></i>`).join('');
+  }
+
+  function newTarget(first) {
+    const t = learner.pickTarget();
+    renderCard();
+    banner(first ? 'بیا حرف «' + t.ch + '» رو پیدا کنیم!' : 'حرف جدید: «' + t.ch + '»', t.word + ' ' + t.emoji);
+    speak(`${t.ch}، ${t.word}`);
+  }
+
+  function banner(text, small) {
+    const b = $('banner');
+    b.innerHTML = text + (small ? `<small>${small}</small>` : '');
+    if (b.animate && !RM) {
+      b.animate([{ opacity: 0, transform: 'scale(.7)' }, { opacity: 1, transform: 'scale(1.06)', offset: 0.15 }, { opacity: 1, transform: 'scale(1)', offset: 0.8 }, { opacity: 0, transform: 'translateY(-10px)' }], { duration: 2000, easing: 'ease-out' });
+    } else { b.style.opacity = 1; setTimeout(() => { b.style.opacity = 0; }, 1600); }
+  }
+
+  /* ---------- particles ---------- */
+
+  function burst(x, y, n, colors, o) {
+    if (RM) return;
+    o = o || {};
+    for (let i = 0; i < n; i++) {
+      const a = rand(0, Math.PI * 2), sp = (o.speed || 200) * rand(0.4, 1.1);
+      G.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (o.up || 60), life: rand(0.5, 0.9), age: 0, kind: pick(o.kinds || ['star', 'dot']), color: pick(colors), size: rand(4, 8), g: 600, rot: rand(0, 6) });
+    }
+  }
+  function floatText(x, y, text, color) { G.parts.push({ x, y, vx: 0, vy: -70, life: 1.0, age: 0, kind: 'text', text, color: color || '#fff', size: 22, g: 0 }); }
+
+  function drawParts() {
+    for (const p of G.parts) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - (p.age / p.life) ** 2);
+      ctx.translate(p.x, p.y);
+      ctx.fillStyle = p.color;
+      if (p.kind === 'text') {
+        ctx.font = '800 ' + p.size + 'px Vazirmatn, Tahoma, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(60,40,30,.7)'; ctx.strokeText(p.text, 0, 0);
+        ctx.fillText(p.text, 0, 0);
+      } else if (p.kind === 'star') {
+        ctx.rotate(p.rot + p.age * 5);
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? p.size * 0.45 : p.size; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+        ctx.closePath(); ctx.fill();
+      } else { ctx.beginPath(); ctx.arc(0, 0, p.size * 0.6, 0, 7); ctx.fill(); }
+      ctx.restore();
+    }
+  }
+
+  /* ---------- update ---------- */
+
+  function jump() {
+    if (mode !== 'play' || G.caught) return;
+    if (G.y <= 0.5 && G.jumps === 0) { G.vy = JUMP_V; G.jumps = 1; Audio_.jump(); burst(leaderX(), GROUND, 5, ['#fff', '#d6efb0'], { kinds: ['dot'], speed: 90, up: 20 }); }
+    else if (G.jumps === 1) { G.vy = JUMP2_V; G.jumps = 2; Audio_.jump2(); }
+  }
+
+  function circleRect(cx, cy, r, rx0, ry0, rx1, ry1) {
+    const nx = clamp(cx, rx0, rx1), ny = clamp(cy, ry0, ry1);
+    return (cx - nx) ** 2 + (cy - ny) ** 2 <= r * r;
+  }
+
+  function yAt(tNow) { // the leader's height `lag` seconds ago, for the follower
+    const hist = G.hist;
+    if (!hist.length) return 0;
+    for (let i = hist.length - 1; i >= 0; i--) if (hist[i].t <= tNow) return hist[i].y;
+    return hist[0].y;
+  }
+
+  function collectCoin(e, byLeader) {
+    e.dead = true;
+    G.coins++;
+    Audio_.coin();
+    burst(e.x, GROUND - e.h, 4, ['#ffe27a', '#fff'], { kinds: ['star'], speed: 140 });
+    $('coins').textContent = fa(G.coins);
+  }
+
+  function collectLetter(e, byLeader) {
+    const t = learner.target;
+    if (e.ch === t.ch) {
+      e.dead = true;
+      G.ok++;
+      G.coins += 10;
+      G.gap = Math.min(GAP_MAX, G.gap + 16);
+      const res = learner.correct(t.ch);
+      Audio_.good();
+      burst(e.x, GROUND - e.h, 18, ['#ffd23f', '#ff9aa2', '#8fd6c3', '#fff'], { speed: 260 });
+      floatText(e.x, GROUND - e.h - 30, 'آفرین! +۱۰', '#ffe27a');
+      $('coins').textContent = fa(G.coins);
+      if (res.mastered) {
+        G.learnedNow.add(t.ch);
+        G.cheer = 1.2;
+        Audio_.cheer();
+        banner('عالی شد! ' + t.emoji, t.word);
+        speak(t.word);
+        setTimeout(() => { if (mode === 'play') newTarget(false); }, 1700);
+      } else renderCard();
+    } else if (byLeader) {
+      e.dead = true;
+      G.bad++;
+      learner.wrong(e.ch);
+      Audio_.bad();
+      floatText(e.x, GROUND - e.h - 30, 'این «' + e.ch + '» بود', '#ffffff');
+      burst(e.x, GROUND - e.h, 6, ['#cfd8dc', '#fff'], { kinds: ['dot'], speed: 120 });
+    }
+  }
+
+  function hit(e) {
+    G.invuln = 1.3; G.hurt = 0.6; G.slow = 0.35; G.shake = 0.3;
+    G.gap -= GAP_HIT;
+    Audio_.hit();
+    burst(leaderX(), GROUND - 40, 10, ['#ffffff', '#ffd9a8'], { kinds: ['dot'], speed: 160 });
+    if (G.gap <= GAP_MIN) gameOver();
+  }
+
+  function update(dt) {
+    G.time += dt;
+    if (G.caught) {
+      G.overT += dt;
+      G.parts.forEach((p) => { p.age += dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; });
+      G.parts = G.parts.filter((p) => p.age < p.life);
+      if (G.overT > 1.1 && mode === 'play') showOver();
+      return;
+    }
+    G.speed = 205 + Math.min(G.time, 100) * 1.5;
+    const sp = G.speed * (G.slow > 0 ? 0.55 : 1);
+    G.anim += dt * (sp / 210);
+    G.dist += sp * dt;
+    G.invuln = Math.max(0, G.invuln - dt);
+    G.hurt = Math.max(0, G.hurt - dt);
+    G.slow = Math.max(0, G.slow - dt);
+    G.shake = Math.max(0, G.shake - dt);
+    G.cheer = Math.max(0, G.cheer - dt);
+    if (G.invuln <= 0 && G.gap < GAP_MAX) G.gap = Math.min(GAP_MAX, G.gap + 5 * dt);
+
+    // leader physics
+    G.vy -= GRAV * dt;
+    G.y += G.vy * dt;
+    if (G.y <= 0) { G.y = 0; G.vy = 0; G.jumps = 0; }
+    G.hist.push({ t: G.time, y: G.y });
+    while (G.hist.length && G.hist[0].t < G.time - HISTORY) G.hist.shift();
+    const lag = G.gap / sp;
+    const fy = yAt(G.time - lag);
+
+    // world
+    for (const e of G.entities) e.x -= sp * dt;
+    G.spawnIn -= sp * dt;
+    if (G.spawnIn <= 0) {
+      const target = learner.target;
+      const pat = spawner.next({ speed: G.speed, dist: G.dist, target: target.ch, distractors: learner.distractors(2) });
+      const x0 = W + 80;
+      for (const it of pat.items) {
+        const e = Object.assign({}, it, { x: x0 + it.dx });
+        if (e.t === 'letter') e.color = colorOf(e.ch);
+        G.entities.push(e);
+      }
+      G.spawnIn = pat.len;
+    }
+
+    // collisions
+    const LX = leaderX(), FX = LX - G.gap;
+    const lTop = GROUND - G.y - 104, lBot = GROUND - G.y;
+    const fTop = GROUND - fy - 104, fBot = GROUND - fy;
+    for (const e of G.entities) {
+      if (e.dead) continue;
+      if (e.t === 'obs') {
+        if (G.invuln <= 0) {
+          const x0 = e.x - e.w / 2 + 6, x1 = e.x + e.w / 2 - 6, y0 = GROUND - e.h + 8;
+          if (LX + 14 > x0 && LX - 14 < x1 && lBot > y0 && lBot - 70 < GROUND) { hit(e); }
+        }
+      } else {
+        const r = e.t === 'coin' ? 15 : 30, cy = GROUND - e.h;
+        if (circleRect(e.x, cy, r, LX - 16, lTop, LX + 16, lBot)) { (e.t === 'coin' ? collectCoin : collectLetter)(e, true); }
+        else if (circleRect(e.x, cy, r, FX - 16, fTop, FX + 16, fBot)) {
+          if (e.t === 'coin') collectCoin(e, false);
+          else if (e.ch === learner.target.ch) collectLetter(e, false);
+        }
+      }
+      if (G.caught) break;
+    }
+    G.entities = G.entities.filter((e) => !e.dead && e.x > -120);
+
+    G.parts.forEach((p) => { p.age += dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; });
+    G.parts = G.parts.filter((p) => p.age < p.life);
+    G._fy = fy;
+  }
+
+  function gameOver() {
+    G.caught = true;
+    G.overT = 0;
+    Audio_.over();
+    burst(leaderX() - G.gap / 2, GROUND - 60, 14, ['#ffd23f', '#fff', '#ff9aa2'], { speed: 220 });
+  }
+
+  function showOver() {
+    const prevBest = store.get('bestDist', 0);
+    const dist = Math.floor(G.dist / 10);
+    if (dist > prevBest) store.set('bestDist', dist);
+    store.set('coinsTotal', store.get('coinsTotal', 0) + G.coins);
+    $('rCoins').textContent = fa(G.coins);
+    $('rOk').textContent = fa(G.ok);
+    $('rDist').textContent = fa(dist) + ' م';
+    const l = [...G.learnedNow];
+    $('rLearned').textContent = l.length ? 'امروز یاد گرفتی: ' + l.join('  ') : (G.ok ? 'آفرین! به حرف‌ها نزدیک شدی' : 'دفعه‌ی بعد حرف‌ها رو بگیر!');
+    $('overTitle').textContent = G.bad > G.ok + 2 ? 'آخ! به هم خوردیم' : 'ای وای! به هم خوردیم';
+    buildGrid();
+    setMode('over');
+  }
+
+  /* ---------- draw ---------- */
+
+  function shadow(x, h, s) {
+    ctx.fillStyle = 'rgba(40,60,20,.22)';
+    ctx.beginPath(); ctx.ellipse(x, GROUND + 4, 26 * s * (1 - clamp(h / 320, 0, 0.5)), 7 * s, 0, 0, 7); ctx.fill();
+  }
+
+  function drawRun() {
+    ctx.save();
+    if (G.shake > 0 && !RM) ctx.translate(rand(-3, 3), rand(-3, 3));
+    drawScenery(G.dist);
+    for (const e of G.entities) {
+      if (e.t === 'obs') drawObstacle(e);
+      else if (e.t === 'coin') drawCoin(e, G.time);
+      else drawLetter(e, G.time);
+    }
+    const LX = leaderX(), FX = LX - G.gap;
+    const fy = G._fy || 0;
+    const S = 0.86;
+    const near = G.gap < 52;
+    // follower first (it is behind)
+    shadow(FX, fy, S);
+    const tumble = G.caught ? Math.min(G.overT, 0.6) / 0.6 : 0;
+    Chars.draw(ctx, G.other, { x: FX, footY: GROUND - fy, scale: S, t: G.anim + 1.3, air: fy > 6, hurt: near || G.caught, happy: G.cheer > 0, rot: tumble * -1.2 });
+    shadow(LX, G.y, S);
+    if (!(G.invuln > 0 && Math.floor(G.time * 14) % 2 === 0)) {
+      Chars.draw(ctx, G.kind, { x: LX, footY: GROUND - G.y, scale: S, t: G.anim, air: G.y > 6, hurt: G.hurt > 0 || G.caught, happy: G.cheer > 0, rot: tumble * 1.2 });
+    }
+    if (near && !G.caught) {
+      ctx.save();
+      ctx.font = '800 30px Vazirmatn, Tahoma, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ff5a5f';
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 5;
+      const by = GROUND - 150 - Math.abs(Math.sin(G.time * 10)) * 6;
+      ctx.strokeText('!', FX + G.gap / 2, by); ctx.fillText('!', FX + G.gap / 2, by);
+      ctx.restore();
+    }
+    drawParts();
+    if (G.hurt > 0) { ctx.fillStyle = `rgba(255,90,90,${G.hurt * 0.25})`; ctx.fillRect(0, 0, W, H); }
+    ctx.restore();
+  }
+
+  function drawIdle(t) {
+    drawScenery(t * 60);
+  }
+
+  function frame(ts) {
+    const dt = Math.min(0.033, (ts - last) / 1000 || 0.016);
+    last = ts;
+    if (mode === 'play') { update(dt); drawRun(); }
+    else if (mode === 'pause' || mode === 'over') { if (G) drawRun(); }
+    else drawIdle(ts / 1000);
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------- menu & buttons ---------- */
+
+  function buildGrid() {
+    const g = $('grid');
+    g.innerHTML = '';
+    const learned = new Set(learner.learned());
+    const unlocked = new Set(learner.pool().map((l) => l.ch));
+    LD.LETTERS.forEach((l) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = l.ch;
+      b.className = learned.has(l.ch) ? 'known' : (unlocked.has(l.ch) ? 'new' : '');
+      b.addEventListener('click', () => { Audio_.unlock(); speak(`${l.ch}، ${l.word}`); });
+      g.appendChild(b);
+    });
+    $('learnedCount').textContent = fa(learned.size);
+  }
+
+  function pauseGame(on) {
+    if (on && mode === 'play') setMode('pause');
+    else if (!on && mode === 'pause') { last = performance.now(); setMode('play'); }
+  }
+
+  document.querySelectorAll('.pick').forEach((b) => b.addEventListener('click', () => { Audio_.unlock(); newRun(b.dataset.kind); }));
+  $('name-boy').textContent = CHARACTERS.boy.name;
+  $('name-girl').textContent = CHARACTERS.girl.name;
+  $('btnAgain').addEventListener('click', () => { Audio_.unlock(); newRun(selected); });
+  $('btnMenu').addEventListener('click', () => { setMode('menu'); buildGrid(); });
+  $('btnMenu2').addEventListener('click', () => { setMode('menu'); buildGrid(); });
+  $('btnResume').addEventListener('click', () => pauseGame(false));
+  $('btnPause').addEventListener('click', () => pauseGame(true));
+  $('card').addEventListener('click', () => { if (learner.target) speak(`${learner.target.ch}، ${learner.target.word}`); });
+  const soundBtn = $('btnSound');
+  const paintSound = () => { soundBtn.textContent = Audio_.on ? '🔊' : '🔇'; };
+  soundBtn.addEventListener('click', () => { Audio_.toggle(); paintSound(); });
+  paintSound();
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(true); });
+
+  // jump: tap anywhere on the stage (not on buttons) or press a key
+  stage.addEventListener('pointerdown', (e) => {
+    if (mode !== 'play') return;
+    if (e.target.closest('button')) return;
+    e.preventDefault();
+    Audio_.unlock();
+    jump();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') { e.preventDefault(); if (mode === 'play') jump(); }
+    else if (e.key === 'Escape' || e.key === 'p') { pauseGame(mode === 'play'); }
+  });
+  window.addEventListener('resize', () => { resize(); if (mode === 'menu') previews(); });
+
+  function previews() { Chars.preview($('pv-boy'), 'boy'); Chars.preview($('pv-girl'), 'girl'); }
+
+  // test hook
+  window.__land = {
+    get G() { return G; }, get mode() { return mode; }, learner, jump,
+    start: (k) => newRun(k || 'boy'),
+    step: (dt, n) => { for (let i = 0; i < (n || 1); i++) update(dt); drawRun(); },
+  };
+
+  resize();
+  buildGrid();
+  previews();
+  setMode('menu');
+  if (document.fonts && document.fonts.load) document.fonts.load('800 38px Vazirmatn').catch(() => {});
+  requestAnimationFrame(frame);
+})();
+
+</script>
+</body>
+</html>

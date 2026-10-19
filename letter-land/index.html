@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>سرزمین حرف‌ها</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@500;800&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="stage" id="stage" dir="rtl" lang="fa">
+    <canvas id="cv"></canvas>
+
+    <div class="hud" id="hud" hidden>
+      <div class="coins"><span class="coin-icon"></span><b id="coins">۰</b></div>
+      <button class="card" id="card" type="button" aria-label="بشنو">
+        <span class="card-letter" id="cl">ب</span>
+        <span class="card-side">
+          <span class="card-word" id="cw"></span>
+          <span class="dots" id="cd"></span>
+        </span>
+        <span class="card-emoji" id="ce"></span>
+      </button>
+      <div class="tools">
+        <button id="btnSound" type="button" aria-label="صدا">🔊</button>
+        <button id="btnPause" type="button" aria-label="مکث">⏸</button>
+      </div>
+    </div>
+
+    <div class="banner" id="banner"></div>
+
+    <section class="screen" id="menu">
+      <h1>سرزمین حرف‌ها</h1>
+      <p class="sub">یکی رو انتخاب کن تا بدوه!<br>اون یکی خودش دنبالش میاد</p>
+      <div class="picks">
+        <button class="pick" data-kind="boy" type="button"><canvas class="pv" id="pv-boy"></canvas><span id="name-boy">پسرک</span></button>
+        <button class="pick" data-kind="girl" type="button"><canvas class="pv" id="pv-girl"></canvas><span id="name-girl">دخترک</span></button>
+      </div>
+      <p class="hint">لمس صفحه یا فاصله = پرش (دوبار هم می‌شه)</p>
+      <details class="mine">
+        <summary>حرف‌های من <b id="learnedCount">۰</b> از ۳۳</summary>
+        <div class="grid" id="grid"></div>
+      </details>
+    </section>
+
+    <section class="screen" id="pause" hidden>
+      <h2>مکث</h2>
+      <button class="big" id="btnResume" type="button">ادامه</button>
+      <button class="ghost" id="btnMenu" type="button">منوی اصلی</button>
+    </section>
+
+    <section class="screen" id="over" hidden>
+      <h2 id="overTitle">آخ! به هم خوردیم</h2>
+      <div class="result">
+        <div><span>سکه</span><b id="rCoins">۰</b></div>
+        <div><span>حرف درست</span><b id="rOk">۰</b></div>
+        <div><span>مسافت</span><b id="rDist">۰</b></div>
+      </div>
+      <p class="learned" id="rLearned"></p>
+      <button class="big" id="btnAgain" type="button">دوباره بدویم</button>
+      <button class="ghost" id="btnMenu2" type="button">انتخاب شخصیت</button>
+    </section>
+  </main>
+
+  <script src="letters.js"></script>
+  <script src="learning.js"></script>
+  <script src="spawner.js"></script>
+  <script src="chars.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

@@ -8,6 +8,16 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <pre id="err" hidden></pre>
+  <script>
+    // shows any startup error on screen so a broken phone can be diagnosed from a screenshot
+    (function () {
+      function show(msg) { var p = document.getElementById('err'); if (!p) return; p.hidden = false; p.textContent += msg + '\n'; }
+      window.addEventListener('error', function (e) { show((e.message || 'error') + ' @' + String(e.filename || '').split('/').pop() + ':' + (e.lineno || 0)); });
+      window.addEventListener('unhandledrejection', function (e) { show('promise: ' + (e.reason && e.reason.message || e.reason)); });
+      setTimeout(function () { if (!window.__land) show('بازی بارگذاری نشد (JS اجرا نشد)'); }, 2500);
+    })();
+  </script>
   <main class="stage" id="stage" dir="rtl" lang="fa">
     <canvas id="cv"></canvas>
 

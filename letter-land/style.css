@@ -172,3 +172,9 @@ button.ghost { background: rgba(255, 255, 255, .8); color: var(--ink); }
 .result span { font-size: .75rem; color: var(--muted); }
 .result b { font-size: 1.4rem; }
 .learned { margin: 0; line-height: 1.8; min-height: 1.8em; }
+
+#err {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 99; margin: 0; padding: 8px 10px;
+  background: #fff0f0; color: #b00020; font: 12px/1.5 monospace; white-space: pre-wrap; direction: ltr; text-align: left;
+}
+#err[hidden] { display: none; }

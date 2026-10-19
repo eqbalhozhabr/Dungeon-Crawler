@@ -14,7 +14,7 @@
   const GAP_MIN = 24;         // closer than this = they bump into each other = game over
   const GAP_HIT = 42;
   const HISTORY = 2.2;        // seconds of the leader's path the follower can replay
-  const CHARACTERS = { boy: { name: 'پسرک' }, girl: { name: 'دخترک' } };
+  const CHARACTERS = { boy: { name: 'آزاد' }, girl: { name: 'رها' } };
   const GROUP_COLORS = ['#ff8f70', '#5fb3e8', '#7bc65a', '#ffb62e', '#b681e0', '#ee7aa6'];
 
   const $ = (id) => document.getElementById(id);

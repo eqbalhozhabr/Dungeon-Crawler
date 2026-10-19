@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>جعبه‌ی گربه‌ها — پروتوتایپ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>🐱 جعبه‌ی گربه‌ها</h1>
+      <span class="tag">پروتوتایپ v0</span>
+    </header>
+
+    <nav class="modes" id="modes" aria-label="حالت بازی"></nav>
+
+    <section class="hud">
+      <div class="stat"><span>امتیاز</span><b id="score">0</b></div>
+      <div class="stat"><span>بهترین</span><b id="best">0</b></div>
+      <div class="stat"><span>افسانه‌ای‌ها</span><b id="legends">0</b></div>
+      <div class="stat boost" id="boost" hidden><span>🔥 امتیاز ×۲</span><b id="boost-n">0</b></div>
+      <div class="buttons">
+        <button id="sound" type="button" aria-label="صدا">🔊</button>
+        <button id="undo" type="button">↩︎</button>
+        <button id="restart" type="button">بازی جدید</button>
+      </div>
+    </section>
+
+    <div class="board-wrap">
+      <div class="board" id="board">
+        <div class="cells" id="cells"></div>
+        <div class="pieces" id="pieces"></div>
+        <div class="dim" id="dim"></div>
+        <canvas id="fx"></canvas>
+        <div class="banner" id="banner"></div>
+        <div class="over" id="over" hidden>
+          <div>
+            <p>جعبه پر شد! 😿</p>
+            <p class="final">امتیاز: <b id="final-score">0</b></p>
+            <button id="again" type="button">دوباره</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="tray" id="tray" aria-label="گربه‌های آماده"></section>
+    <p class="rules" id="rules"></p>
+  </main>
+
+  <script src="engine.js"></script>
+  <script src="kit.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

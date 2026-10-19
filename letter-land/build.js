@@ -31,4 +31,5 @@ ${scripts}
 `;
 fs.mkdirSync(path.join(__dirname, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(__dirname, 'dist', 'letter-land.html'), out);
+fs.writeFileSync(path.join(__dirname, 'dist', 'index.html'), out); // so a static host serves it at the site root
 console.log('dist/letter-land.html', (out.length / 1024).toFixed(0) + ' KB');

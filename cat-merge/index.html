@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>گربه‌های کش‌دار — پروتوتایپ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>🐱 گربه‌های کش‌دار</h1>
+      <span class="tag">پروتوتایپ v0</span>
+    </header>
+
+    <nav class="modes" id="modes" aria-label="حالت بازی"></nav>
+    <p class="rules" id="rules"></p>
+
+    <section class="hud">
+      <div class="stat"><span>امتیاز</span><b id="score">0</b></div>
+      <div class="stat"><span>بهترین</span><b id="best">0</b></div>
+      <div class="stat"><span>افسانه‌ای‌ها</span><b id="legends">0</b></div>
+      <div class="buttons">
+        <button id="undo" type="button">↩︎ برگشت</button>
+        <button id="restart" type="button">بازی جدید</button>
+      </div>
+    </section>
+
+    <div class="board-wrap">
+      <div class="board" id="board">
+        <div class="cells" id="cells"></div>
+        <div class="pieces" id="pieces"></div>
+        <div class="toast" id="toast"></div>
+        <div class="over" id="over" hidden>
+          <div>
+            <p>جا تموم شد! 😿</p>
+            <p class="final">امتیاز: <b id="final-score">0</b></p>
+            <button id="again" type="button">دوباره</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="collection" id="collection" aria-label="کلکسیون گربه‌ها"></section>
+    <p class="hint">کلیدهای جهت‌دار یا WASD — یا انگشتت رو روی تخته بکش</p>
+  </main>
+
+  <script src="engine.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

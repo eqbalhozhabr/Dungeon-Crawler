@@ -625,7 +625,7 @@
   });
   window.addEventListener('resize', () => { resize(); if (mode === 'menu') previews(); });
 
-  function previews() { Chars.preview($('pv-boy'), 'boy'); Chars.preview($('pv-girl'), 'girl'); Chars.whenReady(() => { Chars.preview($('pv-boy'), 'boy'); Chars.preview($('pv-girl'), 'girl'); }); }
+  function previews() { const P = window.LetterPicks || {}; ['boy', 'girl'].forEach((k) => { if (P[k]) $('pv-' + k).src = P[k].src; }); }
 
   // test hook
   window.__land = {

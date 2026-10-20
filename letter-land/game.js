@@ -535,12 +535,12 @@
     }
     const LX = leaderX(), FX = LX - G.gap;
     const fy = G._fy || 0;
-    const S = 0.86;
+    const S = 1.0;
     const near = G.gap < 52;
     // follower first (it is behind)
     shadow(FX, fy, S);
     const tumble = G.caught ? Math.min(G.overT, 0.6) / 0.6 : 0;
-    Chars.draw(ctx, G.other, { x: FX, footY: GROUND - fy, scale: S, t: G.anim + 1.3, air: fy > 6, hurt: near || G.caught, happy: G.cheer > 0, rot: tumble * -1.2 });
+    Chars.draw(ctx, G.other, { x: FX, footY: GROUND - fy, scale: S, t: G.anim + 0.25, air: fy > 6, hurt: near || G.caught, happy: G.cheer > 0, rot: tumble * -1.2 });
     shadow(LX, G.y, S);
     if (!(G.invuln > 0 && Math.floor(G.time * 14) % 2 === 0)) {
       Chars.draw(ctx, G.kind, { x: LX, footY: GROUND - G.y, scale: S, t: G.anim, air: G.y > 6, hurt: G.hurt > 0 || G.caught, happy: G.cheer > 0, rot: tumble * 1.2 });

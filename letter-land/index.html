@@ -22,33 +22,36 @@
     <canvas id="cv"></canvas>
 
     <div class="hud" id="hud" hidden>
-      <div class="coins"><span class="coin-icon"></span><b id="coins">۰</b></div>
-      <button class="card" id="card" type="button" aria-label="بشنو">
-        <span class="card-letter" id="cl">ب</span>
-        <span class="card-side">
-          <span class="card-word" id="cw"></span>
-          <span class="dots" id="cd"></span>
-        </span>
-        <span class="card-emoji" id="ce"></span>
-      </button>
-      <div class="tools">
-        <button id="btnSound" type="button" aria-label="صدا">🔊</button>
-        <button id="btnPause" type="button" aria-label="مکث">⏸</button>
+      <div class="hud-top">
+        <div class="coins"><span class="coin-icon"></span><b id="coins">۰</b></div>
+        <div class="lvl"><b id="lvlNum">مرحله ۱</b><span id="lvlName">شروع</span><span class="rdots" id="rdots"></span></div>
+        <div class="tools">
+          <button id="btnSound" type="button" aria-label="صدا">🔊</button>
+          <button id="btnPause" type="button" aria-label="مکث">⏸</button>
+        </div>
       </div>
+      <button class="wcard" id="card" type="button" aria-label="بشنو">
+        <span class="w-emoji" id="we"></span>
+        <span class="w-main">
+          <span class="slots" id="slots"></span>
+          <span class="w-hint" id="wh"></span>
+        </span>
+      </button>
     </div>
 
     <div class="banner" id="banner"></div>
 
     <section class="screen" id="menu">
       <h1>سرزمین حرف‌ها</h1>
-      <p class="sub">یکی رو انتخاب کن تا بدوه!<br>اون یکی خودش دنبالش میاد</p>
+      <p class="sub">مرحله و شخصیت رو انتخاب کن.<br>اون یکی خودش دنبالش میاد</p>
+      <div class="levels" id="levels" aria-label="مرحله‌ها"></div>
       <div class="picks">
         <button class="pick" data-kind="boy" type="button"><img class="pv" id="pv-boy" alt=""><span id="name-boy">آزاد</span></button>
         <button class="pick" data-kind="girl" type="button"><img class="pv" id="pv-girl" alt=""><span id="name-girl">رها</span></button>
       </div>
       <p class="hint">لمس صفحه یا فاصله = پرش (دوبار هم می‌شه)</p>
       <details class="mine">
-        <summary>حرف‌های من <b id="learnedCount">۰</b> از ۳۳</summary>
+        <summary>حرف‌هایی که گرفتم <b id="learnedCount">۰</b> از ۳۳</summary>
         <div class="grid" id="grid"></div>
       </details>
     </section>
@@ -63,7 +66,7 @@
       <h2 id="overTitle">آخ! به هم خوردیم</h2>
       <div class="result">
         <div><span>سکه</span><b id="rCoins">۰</b></div>
-        <div><span>حرف درست</span><b id="rOk">۰</b></div>
+        <div><span>کلمه‌ی کامل</span><b id="rOk">۰</b></div>
         <div><span>مسافت</span><b id="rDist">۰</b></div>
       </div>
       <p class="learned" id="rLearned"></p>
@@ -73,8 +76,9 @@
   </main>
 
   <script src="letters.js"></script>
-  <script src="learning.js"></script>
-  <script src="spawner.js"></script>
+  <script src="words.js"></script>
+  <script src="wordplay.js"></script>
+    <script src="spawner.js"></script>
   <script src="runcycle.js"></script>
   <script src="picks.js"></script>
   <script src="chars.js"></script>

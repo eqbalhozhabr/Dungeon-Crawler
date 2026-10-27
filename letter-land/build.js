@@ -5,7 +5,8 @@ const read = (f) => fs.readFileSync(path.join(__dirname, f), 'utf8');
 
 const html = read('index.html');
 const body = html.match(/<body>([\s\S]*?)<script src="letters\.js">/)[1];
-const scripts = ['letters.js', 'learning.js', 'spawner.js', 'runcycle.js', 'picks.js', 'chars.js', 'game.js'].map((f) => {
+const files = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]); // same list as index.html
+const scripts = files.map((f) => {
   const code = read(f);
   if (code.includes('</script')) throw new Error(f + ' contains </script');
   return `<script>\n${code}\n</script>`;

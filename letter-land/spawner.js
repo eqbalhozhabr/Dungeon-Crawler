@@ -6,13 +6,16 @@
 (function (root) {
   'use strict';
 
+  // sizes of every obstacle kind (all can be cleared by a normal jump)
   const OBSTACLES = {
-    rock: { w: 54, h: 40 },
-    log: { w: 66, h: 38 },
-    bush: { w: 64, h: 54 },
-    basket: { w: 56, h: 50 },
+    rock: { w: 54, h: 40 }, log: { w: 66, h: 38 }, bush: { w: 64, h: 54 }, basket: { w: 56, h: 50 },
+    hay: { w: 56, h: 50 }, crate: { w: 52, h: 48 }, bucket: { w: 44, h: 46 },
+    crab: { w: 52, h: 34 }, sandcastle: { w: 56, h: 50 }, driftwood: { w: 70, h: 30 },
+    icecube: { w: 50, h: 46 }, snowpile: { w: 62, h: 42 }, pine: { w: 48, h: 58 },
+    cone: { w: 40, h: 52 }, barrel: { w: 46, h: 52 }, bench: { w: 70, h: 44 },
+    mushroom: { w: 52, h: 52 }, crystal: { w: 46, h: 56 }, gift: { w: 50, h: 48 },
   };
-  const OBSTACLE_KINDS = Object.keys(OBSTACLES);
+  const OBSTACLE_KINDS = ['rock', 'log', 'bush', 'basket'];
   const LOW = 55;   // reached by just running
   const HIGH = 175; // needs a jump
   const LETTER_SPACING = 120;
@@ -23,7 +26,6 @@
     let count = 0;
 
     const pick = (arr) => arr[Math.floor(rng() * arr.length)];
-    const obstacle = (dx) => { const kind = pick(OBSTACLE_KINDS); return Object.assign({ t: 'obs', dx, kind }, OBSTACLES[kind]); };
 
     function shuffle(arr) {
       const a = arr.slice();
@@ -31,12 +33,20 @@
       return a;
     }
 
-    // ctx: { speed, dist, target, distractors }
+    /*
+     * ctx: { speed, dist, letters (the letters of a gate), kinds (obstacle kinds of this scenery),
+     *        gateEvery (patterns between two gates), noGate (true while another gate is still around) }
+     */
     function next(ctx) {
       const air = ctx.speed * 0.72; // how far a jump carries
+      const kinds = ctx.kinds && ctx.kinds.length ? ctx.kinds : OBSTACLE_KINDS;
+      const every = ctx.gateEvery || 3;
+      const obstacle = (dx) => { const kind = pick(kinds); return Object.assign({ t: 'obs', dx, kind }, OBSTACLES[kind]); };
+
       let kind;
+      const wantGate = ctx.letters && ctx.letters.length && !ctx.noGate && count > 0 && sinceGate >= Math.min(every, count === 1 ? 1 : every);
       if (count === 0) kind = 'coins';
-      else if (sinceGate >= 3 || (count === 2 && sinceGate >= 1)) kind = 'gate';
+      else if (wantGate) kind = 'gate';
       else {
         const bag = ['coins', 'arc', 'arc', 'single', 'single'];
         if (ctx.dist > 1200) bag.push('double');
@@ -68,14 +78,14 @@
       } else if (kind === 'double') {
         const a = obstacle(110);
         const gap = Math.max(260, air * 1.15 + 40);
-        const b = obstacle(110 + a.w / 2 + gap + 0);
+        const b = obstacle(0);
         b.dx = a.dx + a.w / 2 + gap + b.w / 2;
         items.push(a, b);
         for (let i = 0; i < 3; i++) items.push({ t: 'coin', dx: a.dx + a.w / 2 + gap / 2 - 46 + i * 46, h: 45 });
         len = b.dx + b.w / 2 + air * 0.6 + 140;
-      } else { // gate: the target among wrong letters, no obstacles
-        const letters = shuffle([ctx.target].concat(ctx.distractors.slice(0, 2)));
-        let heights = letters.map(() => (rng() < 0.5 ? LOW : HIGH));
+      } else { // gate: the needed letter among look-alikes, no obstacles
+        const letters = shuffle(ctx.letters);
+        const heights = letters.map(() => (rng() < 0.5 ? LOW : HIGH));
         if (heights.every((h) => h === heights[0])) heights[Math.floor(rng() * heights.length)] = heights[0] === LOW ? HIGH : LOW;
         letters.forEach((ch, i) => items.push({ t: 'letter', dx: 80 + i * LETTER_SPACING, h: heights[i], ch }));
         len = 80 + (letters.length - 1) * LETTER_SPACING + 220;

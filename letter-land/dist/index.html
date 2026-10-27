@@ -119,7 +119,7 @@ html, body {
 .slot.cur { outline: 3px solid var(--plum); outline-offset: -1px; animation: curpulse .9s ease-in-out infinite alternate; }
 @keyframes curpulse { from { transform: scale(1); } to { transform: scale(1.08); } }
 .conn { font-size: 2.1rem; font-weight: 800; line-height: 1.5; color: var(--ink); }
-.conn .nj { color: var(--plum); }
+.w-hint .njl { color: var(--plum); font-size: 1.1rem; }
 
 .banner {
   position: absolute;
@@ -499,9 +499,10 @@ window.LetterWords = {"levels":[{"level":1,"name":"شروع","letter_range":"۲ 
     mushroom: { w: 52, h: 52 }, crystal: { w: 46, h: 56 }, gift: { w: 50, h: 48 },
   };
   const OBSTACLE_KINDS = ['rock', 'log', 'bush', 'basket'];
-  const LOW = 55;   // reached by just running
-  const HIGH = 175; // needs a jump
-  const LETTER_SPACING = 120;
+  // letters float in the air: even the lowest one cannot be touched while running (the hit box is ~104 px tall)
+  const LOW = 150;
+  const HIGH = 200;
+  const LETTER_SPACING = 230; // minimum distance between two letters, so one jump takes at most one of them
 
   function createSpawner(opts) {
     const rng = (opts && opts.rng) || Math.random;
@@ -566,12 +567,13 @@ window.LetterWords = {"levels":[{"level":1,"name":"شروع","letter_range":"۲ 
         items.push(a, b);
         for (let i = 0; i < 3; i++) items.push({ t: 'coin', dx: a.dx + a.w / 2 + gap / 2 - 46 + i * 46, h: 45 });
         len = b.dx + b.w / 2 + air * 0.6 + 140;
-      } else { // gate: the needed letter among look-alikes, no obstacles
+      } else { // gate: the needed letter among look-alikes, high in the air, far apart, no obstacles
         const letters = shuffle(ctx.letters);
+        const spacing = Math.max(LETTER_SPACING, Math.min(340, ctx.speed * 0.85)); // a jump carries further when faster
         const heights = letters.map(() => (rng() < 0.5 ? LOW : HIGH));
         if (heights.every((h) => h === heights[0])) heights[Math.floor(rng() * heights.length)] = heights[0] === LOW ? HIGH : LOW;
-        letters.forEach((ch, i) => items.push({ t: 'letter', dx: 80 + i * LETTER_SPACING, h: heights[i], ch }));
-        len = 80 + (letters.length - 1) * LETTER_SPACING + 220;
+        letters.forEach((ch, i) => items.push({ t: 'letter', dx: 100 + i * spacing, h: heights[i], ch }));
+        len = 100 + (letters.length - 1) * spacing + 170;
       }
       return { kind, items, len };
     }
@@ -1151,6 +1153,8 @@ window.LetterPicks = {"boy": {"src": "data:image/png;base64,iVBORw0KGgoAAAANSUhE
 
   function drawLetter(e, t) {
     const y = GROUND - e.h + Math.sin(t * 2.6 + e.x * 0.01) * 4;
+    ctx.fillStyle = 'rgba(30,40,30,.16)';
+    ctx.beginPath(); ctx.ellipse(e.x, GROUND + 2, 20, 5, 0, 0, 7); ctx.fill(); // shows where to jump
     ctx.save();
     ctx.translate(e.x, y);
     ctx.shadowColor = 'rgba(40,60,20,.3)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
@@ -1231,13 +1235,15 @@ window.LetterPicks = {"boy": {"src": "data:image/png;base64,iVBORw0KGgoAAAANSUhE
     const slots = $('slots');
     if (state === 'done') {
       const notes = WP.joinNotes(w);
-      const inner = Array.from(w.display).map((c, i, arr) => {
-        if (c === WP.ZWNJ) return c;
-        const idx = arr.slice(0, i).filter((x) => x !== WP.ZWNJ).length;
-        return idx < w.letters.length - 1 && WP.isNonJoiner(c) ? `<b class="nj">${c}</b>` : c;
-      }).join('');
-      slots.innerHTML = `<span class="conn">${inner}</span>`;
-      $('wh').textContent = notes.length ? '«' + notes.join('» و «') + '» به حرف بعدی نمی‌چسبن' : 'همه‌ی حرف‌ها به هم چسبیدن!';
+      // the word itself is one plain piece of text: any markup inside it would split the joined letters
+      slots.innerHTML = '<span class="conn"></span>';
+      slots.firstChild.textContent = w.display;
+      const note = $('wh');
+      note.textContent = '';
+      if (notes.length) {
+        note.append('این حرف‌ها به حرف بعدی نمی‌چسبن: ');
+        notes.forEach((c, i) => { if (i) note.append(' ، '); const b = document.createElement('b'); b.className = 'njl'; b.textContent = c; note.append(b); });
+      } else note.textContent = 'همه‌ی حرف‌ها به هم چسبیدن!';
       return;
     }
     const n = w.letters.length, ss = slotSize(n);
@@ -1455,9 +1461,10 @@ window.LetterPicks = {"boy": {"src": "data:image/png;base64,iVBORw0KGgoAAAANSUhE
           if (LX + 14 > x0 && LX - 14 < x1 && lBot > y0 && lBot - 70 < GROUND) hit();
         }
       } else {
-        const r = e.t === 'coin' ? 15 : 30, cy = GROUND - e.h;
-        if (circleRect(e.x, cy, r, LX - 16, lTop, LX + 16, lBot)) { if (e.t === 'coin') collectCoin(e); else collectLetter(e, true); }
-        else if (circleRect(e.x, cy, r, FX - 16, fTop, FX + 16, fBot)) {
+        const r = e.t === 'coin' ? 15 : 28, cy = GROUND - e.h;
+        const hw = e.t === 'coin' ? 16 : 12; // letters need a real touch
+        if (circleRect(e.x, cy, r, LX - hw, lTop, LX + hw, lBot)) { if (e.t === 'coin') collectCoin(e); else collectLetter(e, true); }
+        else if (circleRect(e.x, cy, r, FX - hw, fTop, FX + hw, fBot)) {
           if (e.t === 'coin') collectCoin(e);
           else if (e.ch === session.needed()) collectLetter(e, false);
         }

@@ -16,9 +16,10 @@
     mushroom: { w: 52, h: 52 }, crystal: { w: 46, h: 56 }, gift: { w: 50, h: 48 },
   };
   const OBSTACLE_KINDS = ['rock', 'log', 'bush', 'basket'];
-  const LOW = 55;   // reached by just running
-  const HIGH = 175; // needs a jump
-  const LETTER_SPACING = 120;
+  // letters float in the air: even the lowest one cannot be touched while running (the hit box is ~104 px tall)
+  const LOW = 150;
+  const HIGH = 200;
+  const LETTER_SPACING = 230; // minimum distance between two letters, so one jump takes at most one of them
 
   function createSpawner(opts) {
     const rng = (opts && opts.rng) || Math.random;
@@ -83,12 +84,13 @@
         items.push(a, b);
         for (let i = 0; i < 3; i++) items.push({ t: 'coin', dx: a.dx + a.w / 2 + gap / 2 - 46 + i * 46, h: 45 });
         len = b.dx + b.w / 2 + air * 0.6 + 140;
-      } else { // gate: the needed letter among look-alikes, no obstacles
+      } else { // gate: the needed letter among look-alikes, high in the air, far apart, no obstacles
         const letters = shuffle(ctx.letters);
+        const spacing = Math.max(LETTER_SPACING, Math.min(340, ctx.speed * 0.85)); // a jump carries further when faster
         const heights = letters.map(() => (rng() < 0.5 ? LOW : HIGH));
         if (heights.every((h) => h === heights[0])) heights[Math.floor(rng() * heights.length)] = heights[0] === LOW ? HIGH : LOW;
-        letters.forEach((ch, i) => items.push({ t: 'letter', dx: 80 + i * LETTER_SPACING, h: heights[i], ch }));
-        len = 80 + (letters.length - 1) * LETTER_SPACING + 220;
+        letters.forEach((ch, i) => items.push({ t: 'letter', dx: 100 + i * spacing, h: heights[i], ch }));
+        len = 100 + (letters.length - 1) * spacing + 170;
       }
       return { kind, items, len };
     }

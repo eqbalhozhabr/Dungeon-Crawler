@@ -110,6 +110,9 @@ for (let seed = 1; seed <= 40; seed++) {
       assert.strictEqual(ls.filter((x) => x.ch === S.needed()).length, 1, 'exactly one needed letter per gate');
       assert(!p.items.some((x) => x.t === 'obs'), 'no obstacles in a gate');
       assert(new Set(ls.map((x) => x.h)).size > 1, 'letters at different heights');
+      assert(ls.every((x) => x.h >= 140), 'letters are in the air, not on the running path');
+      const xs = ls.map((x) => x.dx).sort((a, b) => a - b);
+      for (let k = 1; k < xs.length; k++) assert(xs[k] - xs[k - 1] >= 230, 'letters are far apart');
     } else sinceGate++;
     assert(sinceGate <= Math.max(every, 1) + 1, 'a gate often enough');
     for (const it of p.items) assert(it.dx >= 0 && it.dx < p.len, 'item inside pattern');

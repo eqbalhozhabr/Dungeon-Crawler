@@ -481,6 +481,8 @@
 
   function drawLetter(e, t) {
     const y = GROUND - e.h + Math.sin(t * 2.6 + e.x * 0.01) * 4;
+    ctx.fillStyle = 'rgba(30,40,30,.16)';
+    ctx.beginPath(); ctx.ellipse(e.x, GROUND + 2, 20, 5, 0, 0, 7); ctx.fill(); // shows where to jump
     ctx.save();
     ctx.translate(e.x, y);
     ctx.shadowColor = 'rgba(40,60,20,.3)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
@@ -561,13 +563,15 @@
     const slots = $('slots');
     if (state === 'done') {
       const notes = WP.joinNotes(w);
-      const inner = Array.from(w.display).map((c, i, arr) => {
-        if (c === WP.ZWNJ) return c;
-        const idx = arr.slice(0, i).filter((x) => x !== WP.ZWNJ).length;
-        return idx < w.letters.length - 1 && WP.isNonJoiner(c) ? `<b class="nj">${c}</b>` : c;
-      }).join('');
-      slots.innerHTML = `<span class="conn">${inner}</span>`;
-      $('wh').textContent = notes.length ? '«' + notes.join('» و «') + '» به حرف بعدی نمی‌چسبن' : 'همه‌ی حرف‌ها به هم چسبیدن!';
+      // the word itself is one plain piece of text: any markup inside it would split the joined letters
+      slots.innerHTML = '<span class="conn"></span>';
+      slots.firstChild.textContent = w.display;
+      const note = $('wh');
+      note.textContent = '';
+      if (notes.length) {
+        note.append('این حرف‌ها به حرف بعدی نمی‌چسبن: ');
+        notes.forEach((c, i) => { if (i) note.append(' ، '); const b = document.createElement('b'); b.className = 'njl'; b.textContent = c; note.append(b); });
+      } else note.textContent = 'همه‌ی حرف‌ها به هم چسبیدن!';
       return;
     }
     const n = w.letters.length, ss = slotSize(n);
@@ -785,9 +789,10 @@
           if (LX + 14 > x0 && LX - 14 < x1 && lBot > y0 && lBot - 70 < GROUND) hit();
         }
       } else {
-        const r = e.t === 'coin' ? 15 : 30, cy = GROUND - e.h;
-        if (circleRect(e.x, cy, r, LX - 16, lTop, LX + 16, lBot)) { if (e.t === 'coin') collectCoin(e); else collectLetter(e, true); }
-        else if (circleRect(e.x, cy, r, FX - 16, fTop, FX + 16, fBot)) {
+        const r = e.t === 'coin' ? 15 : 28, cy = GROUND - e.h;
+        const hw = e.t === 'coin' ? 16 : 12; // letters need a real touch
+        if (circleRect(e.x, cy, r, LX - hw, lTop, LX + hw, lBot)) { if (e.t === 'coin') collectCoin(e); else collectLetter(e, true); }
+        else if (circleRect(e.x, cy, r, FX - hw, fTop, FX + hw, fBot)) {
           if (e.t === 'coin') collectCoin(e);
           else if (e.ch === session.needed()) collectLetter(e, false);
         }

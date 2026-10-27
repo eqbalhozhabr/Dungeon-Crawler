@@ -109,7 +109,7 @@ html, body {
 .slot.cur { outline: 3px solid var(--plum); outline-offset: -1px; animation: curpulse .9s ease-in-out infinite alternate; }
 @keyframes curpulse { from { transform: scale(1); } to { transform: scale(1.08); } }
 .conn { font-size: 2.1rem; font-weight: 800; line-height: 1.5; color: var(--ink); }
-.conn .nj { color: var(--plum); }
+.w-hint .njl { color: var(--plum); font-size: 1.1rem; }
 
 .banner {
   position: absolute;
